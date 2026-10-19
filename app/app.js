@@ -59,6 +59,13 @@ function todayDay() {
   return null;
 }
 const dayInfo = (n) => DAYS.find((d) => d.n === n);
+const two = (k) => String(k).padStart(2, '0');
+// 写真の番号。1つの指示に写真1枚が対応する。記録の写真は「何日目-作業の番号-写真の番号」、論文用は「論文-番号」（どの日に撮っても同じ）
+function photoNo(n, t, s) {
+  if (t.paper) return `論文-${two(PAPER.findIndex((p) => p.id === s.id) + 1)}`;
+  const photoTasks = tasks(n).filter((x) => x.shots && !x.paper);
+  return `${n}-${two(photoTasks.indexOf(t) + 1)}-${two(t.shots.indexOf(s) + 1)}`;
+}
 const taskCache = {};
 function tasks(n) { return (taskCache[n] ??= tasksFor(n)); }
 function progress(n, t) {
@@ -114,7 +121,8 @@ function renderDay(n) {
       const pr = progress(n, t);
       const count = t.repeat ? 'そのつど' : `${pr.done} / ${pr.all} 枚`;
       const done = pr && pr.done === pr.all;
-      html += `<a class="card${t.paper ? ' paper' : ''}" href="#/day/${n}/t/${t.id}"><div class="card-head"><span class="card-title">${esc(t.title)}</span><span class="card-count">${done ? '<span class="done-tag">済</span> ' : ''}${count}</span></div>`
+      const tno = t.paper ? '論文' : `${n}-${two(list.filter((x) => x.shots && !x.paper).indexOf(t) + 1)}`;
+      html += `<a class="card${t.paper ? ' paper' : ''}" href="#/day/${n}/t/${t.id}"><div class="card-head"><span class="card-title"><span class="tno">${tno}</span> ${esc(t.title)}</span><span class="card-count">${done ? '<span class="done-tag">済</span> ' : ''}${count}</span></div>`
         + `<div class="card-desc">${esc(t.role ? '担当：' + t.role : '')}${t.onlyIfAttached ? '（付けた日だけ）' : ''}</div>`
         + (pr ? `<div class="bar"><i style="width:${(100 * pr.done / pr.all).toFixed(0)}%"></i></div>` : '') + '</a>';
     }
@@ -143,7 +151,7 @@ function renderTask(n, id) {
     const at = marks[keyOf(n, t, s)];
     const tag = !t.paper || at ? '' : s.last === n ? '<span class="when alert">今日が最後</span>'
       : s.due <= n ? `<span class="when alert">今日撮る（最後は ${s.last}日目）</span>` : `<span class="when muted">${s.due}日目に撮る（最後は ${s.last}日目）</span>`;
-    return `<li><a class="${at ? 'done' : ''}" href="#/day/${n}/t/${t.id}/s/${i + 1}"><span class="num">${i + 1}</span><span class="t">${esc(s.title)}${at ? `<span class="when">撮った ${t.paper ? mmdd_hhmm(new Date(at)) : hhmmss(new Date(at))}</span>` : tag}</span></a></li>`;
+    return `<li><a class="${at ? 'done' : ''}" href="#/day/${n}/t/${t.id}/s/${i + 1}"><span class="num">${i + 1}</span><span class="t"><span class="pno">${esc(photoNo(n, t, s))}</span> ${esc(s.title)}${at ? `<span class="when">撮った ${t.paper ? mmdd_hhmm(new Date(at)) : hhmmss(new Date(at))}</span>` : tag}</span></a></li>`;
   }).join('') + '</ol>';
   $main.innerHTML = html;
   $main.querySelectorAll('[data-dev]').forEach((b) => b.addEventListener('click', () => openDevice(b.dataset.dev)));
@@ -162,20 +170,20 @@ async function renderShot(n, id, idx) {
   const next = i < t.shots.length - 1 ? `#/day/${n}/t/${t.id}/s/${i + 2}` : `#/day/${n}/t/${t.id}`;
   let html = `<div class="shot-view"><div class="viewer-wrap" id="vw"></div><div class="info">`;
   html += `<a class="back" href="#/day/${n}/t/${t.id}">← ${esc(t.title)}</a>`;
-  html += `<div class="shot-no">${n}日目・${i + 1} / ${t.shots.length} 枚目</div><h1>${esc(s.title)}</h1>`;
+  html += `<div class="shot-no">${n}日目・この作業の ${i + 1} / ${t.shots.length} 枚目</div><div class="photo-no">写真の番号 <b>${esc(photoNo(n, t, s))}</b>（この指示に写真1枚）</div><h1>${esc(s.title)}</h1>`;
   html += `<dl class="kv"><dt>撮る物</dt><dd>${esc(s.what)}</dd><dt>撮る所</dt><dd>${esc(s.where)}</dd><dt>向き</dt><dd>${esc(s.dir)}</dd>`
     + (s.paper ? `<dt>使い道</dt><dd>${esc(s.use)}</dd><dt>撮る日</dt><dd>${s.due}日目に撮る（撮れるのは${esc(dayRange(s.days))}、最後は ${s.last}日目）</dd>` : '') + '</dl>';
-  if (s.paper) html += '<p class="small muted">論文用：同じ構図で3枚。写したくない物はフレームの外へ。人の顔とナンバーは写さない（「論文用」のページの決まり）。</p>';
+  if (s.paper) html += '<p class="small muted">論文用：この指示に1枚。写したくない物はフレームの外へ。人の顔とナンバーは写さない（「論文用」のページの決まり）。</p>';
   html += `<h3>写っていること</h3><ul class="must">${s.must.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`;
   if (s.note) html += `<p class="note">${esc(s.note)}</p>`;
   const hints = (PAPER_HINTS[`${t.id}/${s.id}`] || []).map((id) => PAPER.find((p) => p.id === id)).filter((p) => p && p.days.includes(n) && !marks[paperKey(p)]);
   if (hints.length) {
     const pt = tasks(n).find((x) => x.paper);
-    html += `<div class="note alert"><b>論文用の写真も、ここで撮る</b>（この写真とは別に、同じ構図で3枚）：${hints.map((p) => `<a href="#/day/${n}/t/paper/s/${pt.shots.findIndex((x) => x.id === p.id) + 1}">${esc(p.title)}</a>`).join('、')}</div>`;
+    html += `<div class="note alert"><b>論文用の写真も、ここで撮る</b>（この写真とは別に、1つにつき1枚）：${hints.map((p) => `<a href="#/day/${n}/t/paper/s/${pt.shots.findIndex((x) => x.id === p.id) + 1}">論文-${two(PAPER.indexOf(p) + 1)} ${esc(p.title)}</a>`).join('、')}</div>`;
   }
   if (s.view && s.view.legend) html += `<p class="small muted">図：${esc(s.view.legend)}</p>`;
   if (!t.repeat) html += `<p class="marked-at" id="markedAt">${at ? '撮った：' + (t.paper ? mmdd_hhmm(new Date(at)) : hhmmss(new Date(at))) : ''}</p>`;
-  html += `<p class="small muted">図の見方：桃色＝撮る所とカメラの向き、黄色＝撮る物。指で回せる。</p></div></div>`;
+  html += `<p class="small muted">撮ったら、次の写真を撮る前に「撮った」を押す（写真の時刻と、押した時刻で照らすため）。図の見方：桃色＝撮る所とカメラの向き、黄色＝撮る物。指で回せる。</p></div></div>`;
   html += `<div class="actionbar"><a class="btn" href="${prev}">← 前</a>`
     + (t.repeat ? `<a class="btn" href="#/day/${n}/t/${t.id}">一覧</a>` : `<button class="btn ${at ? '' : 'ok'}" id="markBtn" type="button">${at ? '撮った ✓（取り消す）' : '撮った'}</button>`)
     + `<a class="btn" href="${next}">次 →</a></div>`;
@@ -236,7 +244,7 @@ function renderPaper() {
       const day = p.days.includes(n) ? n : p.days.find((d) => d >= n) ?? p.days[p.days.length - 1];
       const idx = tasks(day).find((t) => t.paper).shots.findIndex((s) => s.id === p.id) + 1;
       const at = marks[paperKey(p)];
-      html += `<li><a class="${cls === 'done' ? 'done' : ''}" href="#/day/${day}/t/paper/s/${idx}"><span class="num">${cls === 'done' ? '✓' : '・'}</span><span class="t">${esc(p.title)}<span class="when ${['last', 'missed', 'due'].includes(cls) ? 'alert' : cls === 'done' ? '' : 'muted'}">${esc(label)}${at ? ' ' + mmdd_hhmm(new Date(at)) : ''}（撮れるのは${esc(dayRange(p.days))}）</span></span></a></li>`;
+      html += `<li><a class="${cls === 'done' ? 'done' : ''}" href="#/day/${day}/t/paper/s/${idx}"><span class="num">${cls === 'done' ? '✓' : '・'}</span><span class="t"><span class="pno">論文-${two(PAPER.indexOf(p) + 1)}</span> ${esc(p.title)}<span class="when ${['last', 'missed', 'due'].includes(cls) ? 'alert' : cls === 'done' ? '' : 'muted'}">${esc(label)}${at ? ' ' + mmdd_hhmm(new Date(at)) : ''}（撮れるのは${esc(dayRange(p.days))}）</span></span></a></li>`;
     }
     html += '</ol>';
   }
@@ -274,8 +282,9 @@ function renderHelp() {
   const src = GEN.sources3d || [];
   let html = '<h1>使い方</h1>';
   html += '<ol><li>下の「手順」で、その日（何日目）を選ぶ。</li><li>作業を選び、1枚目から順に撮る。3D の図の<b style="color:var(--cam)">桃色</b>が撮る所とカメラの向き、<b>黄色</b>が撮る物。「撮る位置から」を押すと、その位置から見た形になる。</li><li>撮ったら「撮った」を押す。次の写真に進む。</li><li>論文用の写真は、記録の写真とは別に撮る。下の「論文用」に全部（撮る日の目安と、最後に撮れる日）がある。その日が最後の物は、日の画面の上に赤く出る。記録の写真の画面にも「論文用の写真も、ここで撮る」と出る。</li></ol>';
+  html += '<h2>1つの指示に写真1枚</h2><ul><li>どの指示も、写真1枚に対応する（写真の番号が付いている）。同じ物を何枚も撮らない。</li><li>撮ったら画面で拡大してピントを見る。ぼけていたら撮り直し、ぼけた方は消す。</li><li>撮ったら、次の写真を撮る前に「撮った」を押す。押した時刻と写真の時刻を照らして、どの写真がどの番号かを後で決める。</li><li>1日の終わりに、下の「撮った印を書き出す」で一覧（写真の番号と押した時刻）を保存する。</li></ul>';
   html += '<h2>撮る前に</h2><ul><li><b>スマートフォンの時刻を「自動」にする。</b>写真は撮った時刻で、計測の記録と照らし合わせる。</li><li>写真は、撮った時刻が残る形で集める（AirDrop か、ケーブルで元のファイルのまま）。LINE などのアプリで送ると、撮った時刻の情報が消えることがあるので使わない。集める場所は未定。</li><li>前日までに、各台の上面（SPRESENSE は容器のふた）に、マスキングテープで名札を貼っておく。書くのは位置と台の名前（例「U12 BRI_P001」）と、x の向き（出口へ）の矢印。写真で台と向きを見分けるため。</li><li>人の顔はなるべく写さない。</li></ul>';
-  html += '<h2>このアプリが残す物</h2><p>写真は受け取らず、保存しない。この端末に残すのは「撮った」の印と押した時刻だけ（ブラウザの中。ほかの人には見えない）。</p><p><button class="btn" id="resetMarks" type="button">この端末の「撮った」の印を全部消す</button></p>';
+  html += '<h2>このアプリが残す物</h2><p>写真は受け取らず、保存しない。この端末に残すのは「撮った」の印と押した時刻だけ（ブラウザの中。ほかの人には見えない）。</p><p><button class="btn" id="exportMarks" type="button">撮った印を書き出す（CSV）</button></p><p class="small muted">写真の番号・題・押した時刻の一覧を、この端末にファイルで保存する（どこにも送らない）。</p><p><button class="btn" id="resetMarks" type="button">この端末の「撮った」の印を全部消す</button></p>';
   html += '<h2>電波の弱い所で使う</h2><p>先に下を押すと、3D をこの端末に読み込んでおく（合わせて約 9 MB）。</p><p><button class="btn" id="prefetch" type="button">3D を全部読み込む</button> <span id="prefetchMsg" class="small muted"></span></p>';
   html += '<h2>図の見方</h2><ul><li>塗りつぶしの印は位置が決まった物、白抜き（点線の札）は案か未定の物。</li><li>橋の 3D は研究側が作った表示用の模型で、寸法の正本ではない。支承・継ぎ目・横桁・路面の形は目安。</li><li>加振器の 3D は作成中。いまは位置の目安の箱を描いている。</li></ul>';
   html += '<h2>決まっていないこと（図と文では「未定」）</h2><ul><li>温度センサ T1・T2 を付ける主桁と面</li><li>ばね上4台と車載の MOSAIC（VM1）を置く所</li><li>BM1 の置き場所（見つからなければ置かない）</li><li>跳躍の位置、静的載荷で止める位置</li><li>横桁のボルトの、端の中の番号の順（2日目の初めに決める）</li><li>撮った写真を集める場所</li></ul>';
@@ -283,6 +292,7 @@ function renderHelp() {
   if (src.length) html += `<div class="table-wrap"><table><tr><th>3D</th><th>元</th><th>元の SHA-256</th></tr>${src.map((x) => `<tr><td>${esc(x.name)}</td><td class="small">${esc(x.from)}</td><td class="code">${esc(x.sha256.slice(0, 12))}…</td></tr>`).join('')}</table></div>`;
   html += '<p class="small muted">表示に three.js 0.160.0（MIT ライセンス）を jsDelivr から読み込む。</p>';
   $main.innerHTML = html;
+  document.getElementById('exportMarks').addEventListener('click', exportMarks);
   document.getElementById('resetMarks').addEventListener('click', () => {
     if (confirm('この端末の「撮った」の印を全部消します。よいですか？')) { marks = {}; save(KEY_MARKS, marks); toast('消しました'); }
   });
@@ -298,6 +308,41 @@ function renderHelp() {
     await getViewer();
     msg.textContent = ok === urls.length ? '読み込みました' : `${urls.length - ok} 個を読み込めませんでした`;
   });
+}
+
+// ---------- 撮った印の書き出し（端末に保存するだけ） ----------
+function exportMarks() {
+  const rows = [];
+  for (const [k, at] of Object.entries(marks)) {
+    const parts = k.split('|');
+    let no = '', day = '', task = '', title = '';
+    if (parts[0] === 'paper') {
+      const p = PAPER.find((x) => x.id === parts[1]);
+      if (!p) continue;
+      no = `論文-${two(PAPER.indexOf(p) + 1)}`; task = '論文用の写真'; title = p.title;
+    } else {
+      const n = +parts[0];
+      const t = dayInfo(n) && tasks(n).find((x) => x.id === parts[1]);
+      const s = t && t.shots.find((x) => x.id === parts[2]);
+      if (!s) continue;
+      no = photoNo(n, t, s); day = `${n}日目`; task = t.title; title = s.title;
+    }
+    const d = new Date(at);
+    rows.push([no, day, task, title, `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${hhmmss(d)}`]);
+  }
+  if (!rows.length) { toast('まだ「撮った」の印がありません'); return; }
+  rows.sort((a, b) => a[4].localeCompare(b[4]));
+  const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = '\ufeff' + [['写真の番号', '日', '作業', '題', '撮ったを押した時刻（端末の時計）'], ...rows].map((r) => r.map(q).join(',')).join('\r\n') + '\r\n';
+  const now = new Date();
+  const name = `photo_marks_${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}_${two(now.getHours())}${two(now.getMinutes())}.csv`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast(`${rows.length} 件を ${name} に書き出しました`);
 }
 
 // ---------- 道順 ----------

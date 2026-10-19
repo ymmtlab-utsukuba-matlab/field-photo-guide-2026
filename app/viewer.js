@@ -369,27 +369,42 @@ export class Viewer {
   }
 
   // ---------- 同時打撃の板（模式） ----------
+  // 3段：1段目 橋の SPRESENSE 12台、2段目 小野橋梁センサ 12台、3段目 感圧と温度のロガー 4台（content.js の SYNC_ROWS と同じ並び）
   syncScene() {
     if (this.scenes.sync) return this.scenes.sync;
     const s = this._baseScene();
-    const board = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.03, 0.5), mat(0xb08d5b));
-    board.position.set(0, 0.015, 0);
-    s.scene.add(board);
-    const n = 12;
-    for (let row = 0; row < 2; row++) {
-      for (let i = 0; i < n; i++) {
-        const c = row === 0 ? COLORS.imu : COLORS.ono;
-        const b = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.09), mat(c));
-        b.position.set(-1.1 + i * 0.2, 0.06, row === 0 ? -0.12 : 0.12);
-        s.scene.add(b);
-        const arr = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), b.position.clone().add(new THREE.Vector3(-0.04, 0.035, 0)), 0.08, 0xffffff, 0.03, 0.02);
-        s.scene.add(arr);
-      }
-    }
-    const l1 = label('橋の SPRESENSE（BRI）', 'dim'); l1.position.set(-1.25, 0.12, -0.3); s.scene.add(l1);
-    const l2 = label('小野橋梁センサ（ONO）', 'dim'); l2.position.set(-1.25, 0.12, 0.32); s.scene.add(l2);
-    const l3 = label('並べ方の模式（実物の形ではない）', 'dim'); l3.position.set(0.6, 0.3, -0.35); s.scene.add(l3);
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.03, 0.75), mat(0xb08d5b));
+    plank.position.set(0, 0.015, 0.02);
+    s.scene.add(plank);
+    const rows = [[-0.22, 12, COLORS.imu], [0.0, 12, COLORS.ono], [0.24, 4, COLORS.temp]];
     s.markers = {};
+    const group = (id, text, center) => {
+      const g = new THREE.Group();
+      g.userData.anchor = center;
+      const l = label(text, 'dim');
+      l.position.copy(center).add(new THREE.Vector3(0, 0.06, 0));
+      l.visible = false;
+      g.add(l);
+      g.userData.label = l;
+      s.scene.add(g);
+      s.markers[id] = g;
+    };
+    rows.forEach(([z, n, c], r) => {
+      for (let i = 0; i < n; i++) {
+        const x = n === 12 ? -1.1 + i * 0.2 : -0.3 + i * 0.2;
+        const b = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.09), mat(c));
+        b.position.set(x, 0.06, z);
+        s.scene.add(b);
+        s.scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), b.position.clone().add(new THREE.Vector3(-0.04, 0.035, 0)), 0.08, 0xffffff, 0.03, 0.02));
+      }
+    });
+    group('row1L', '1段目 左（BRI_P001〜P006）', new THREE.Vector3(-0.6, 0.06, -0.22));
+    group('row1R', '1段目 右（BRI_P007〜P012）', new THREE.Vector3(0.6, 0.06, -0.22));
+    group('row2L', '2段目 左（小野 6台）', new THREE.Vector3(-0.6, 0.06, 0.0));
+    group('row2R', '2段目 右（小野 6台）', new THREE.Vector3(0.6, 0.06, 0.0));
+    group('row3', '3段目（感圧2・温度2）', new THREE.Vector3(0, 0.06, 0.24));
+    group('all', '全 28 台', new THREE.Vector3(0, 0.06, 0.0));
+    const l3 = label('並べ方の模式（実物の形ではない）', 'dim'); l3.position.set(0.7, 0.3, -0.45); s.scene.add(l3);
     s.anchor = new THREE.Vector3(0, 0.06, 0);
     this.scenes.sync = s;
     return s;
@@ -453,7 +468,7 @@ export class Viewer {
   }
 
   _point(s, ref) {
-    if (Array.isArray(ref)) return s === this.scenes.truck ? V(...ref) : B(...ref);
+    if (Array.isArray(ref)) return s === this.scenes.truck ? V(...ref) : s === this.scenes.sync ? new THREE.Vector3(...ref) : B(...ref);
     if (typeof ref === 'string') {
       if (ref.startsWith('node:')) {
         const n = s.node && s.node(ref.slice(5));

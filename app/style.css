@@ -210,3 +210,8 @@ a.note.alert { color: #16202a; }
 .when.alert { color: #d6336c; font-weight: 700; }
 .when.muted { color: var(--ink-2); }
 .rules { margin: 6px 0; padding-left: 1.2em; }
+
+/* 写真の番号 */
+.photo-no { font-size: 15px; margin: 2px 0 4px; }
+.photo-no b { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 18px; color: var(--accent); }
+.pno, .tno { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--ink-2); margin-right: 2px; }

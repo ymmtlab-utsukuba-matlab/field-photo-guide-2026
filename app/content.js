@@ -1,4 +1,4 @@
-// 手順と写真の指示。元は再試験の手順書・計画書・加振器の使い方・設置表（研究室の現場試験の資料、commit 32b7cfb）。
+// 手順と写真の指示。元は鋼製模型橋梁実験の手順書・計画書・加振器の使い方・設置表（研究室の現場試験の資料、commit 32b7cfb）。
 // 橋の座標は設置表と同じ（x：入口の支承の中心の線から出口へ、y：中心線から G4 の側へ、z：上フランジの上面から上。m）。
 // 撮る位置 cam.dir は [橋の向き, G4 の側, 上] の向きで、ねらう所からの距離 dist（m）。
 import { GEN } from './generated.js';
@@ -29,6 +29,7 @@ export const DEVICES = {
   press: { url: 'models/devices/press_logger.glb', name: '感圧センサのロガー（PRESS_P001・P002）', note: 'ロガーの基板。帯（FSR-408）は別の部品。' },
   pressEnd: { url: 'models/devices/press_strip_end.glb', name: '感圧の帯の端（FSR-408）', note: '端子のある端。丸めるときに折らない。' },
   mosaic: { url: 'models/devices/mosaic.glb', name: 'MOSAIC（GNSS の記録の機器）', note: '画面つきの本体。四隅・車載・BM1 で同じ形。' },
+  mass: { url: 'models/mass_exploded.glb', name: 'おもりの部品（組む順に分けて並べた形）', note: 'いちばん下は加振器の本体。その上に、おもりの部品を組む順に分けて並べた。' },
 };
 
 // ---------- 小さな部品 ----------
@@ -235,7 +236,7 @@ function shakerMorningShots(first) {
       what: 'S1 の印の上に置いた加振器（PET-05）',
       where: '橋の外（G1 の側の地面）から', dir: '斜め上から。縦長',
       must: ['底が上フランジにじかに載っている（間に何も挟まない）', '四角い板の辺が桁の向きにそろっている', '白・黄の端子の向き（毎日同じ向きにする）'],
-      view: { target: 'S1shaker', cam: { dir: [-0.3, -1, 0.7], dist: 0.9 }, orient: 'tate', shaker: true, targetLabel: 'S1' },
+      view: { target: 'S1shaker', cam: { dir: [-0.3, -1, 0.7], dist: 0.9 }, orient: 'tate', shaker: true, shakerParts: ['mark', 'body'], targetLabel: 'S1' },
     },
     {
       id: 'S1-clamps', title: 'クランプ：橋の外の側の2本',
@@ -243,21 +244,21 @@ function shakerMorningShots(first) {
       where: '橋の外（G1 の側の地面）から、少し低い所', dir: '斜め横から。横長',
       must: ['外の側の2本が両方写っている', '上の爪が四角い板の角に載っている', '爪の先が本体の円筒に当たっていない（2〜3 mm あける）'],
       note: '4本を少しずつ順に、手で締める。スパナで増し締めしない（加振器とハンマーの使い方 §4）。',
-      view: { target: 'S1shaker', cam: { dir: [0.25, -1, 0.3], dist: 0.85 }, orient: 'yoko', shaker: true },
+      view: { target: 'S1shaker', cam: { dir: [0.25, -1, 0.3], dist: 0.85 }, orient: 'yoko', shaker: true, shakerParts: ['mark', 'body'] },
     },
     {
       id: 'S1-clamps-in', title: 'クランプ：橋の内の側の2本',
       what: 'L型クランプのうち、橋の内の側（G1 と G2 の間）の2本',
       where: '橋の外（G1 の側）から、加振器の上を越えて見下ろす', dir: '斜め上から。横長',
       must: ['内の側の2本が両方写っている', '上の爪が四角い板の角に載っている', '爪の先が本体の円筒に当たっていない'],
-      view: { target: 'S1shaker', cam: { dir: [-0.2, -0.45, 1], dist: 0.8 }, orient: 'yoko', shaker: true },
+      view: { target: 'S1shaker', cam: { dir: [-0.2, -0.45, 1], dist: 0.8 }, orient: 'yoko', shaker: true, shakerParts: ['mark', 'body'] },
     },
     {
       id: 'S1-level', title: '水準器',
       what: '加振器の本体の上面に載せた水準器',
       where: '水準器の真横から', dir: '泡の高さで。横長',
       must: ['泡が真ん中にある', '水準器が本体の上面に載っている（動く台には載せない）'],
-      view: { target: 'S1shaker', cam: { dir: [0, -1, 0.35], dist: 0.5 }, orient: 'yoko', shaker: true },
+      view: { target: 'S1shaker', cam: { dir: [0, -1, 0.35], dist: 0.5 }, orient: 'yoko', shaker: true, shakerParts: ['mark', 'body'] },
     },
   );
   if (first) {
@@ -278,7 +279,7 @@ function shakerMorningShots(first) {
       what: '加振器の台に留めたおもり（大ワッシャー33枚）と 353B33',
       where: '橋の外（G1 の側の地面）から', dir: '真横から。縦長',
       must: ['大ワッシャー33枚の束', '受けナットが台から約 10 mm の高さにあり、ワッシャーが本体から浮いている', '353B33 がいちばん上のワッシャーにあり、ケーブルがテープで留めてある'],
-      view: { target: 'S1shaker', cam: { dir: [0, -1, 0.5], dist: 0.6 }, orient: 'tate', shaker: true },
+      view: { target: 'S1shaker', cam: { dir: [0, -1, 0.5], dist: 0.6 }, orient: 'tate', shaker: true, shakerParts: ['mark', 'body', 'rod', 'mass'] },
     },
     {
       id: 'tarp-gear', title: '機器とケーブル（ブルーシートの上）',
@@ -448,7 +449,7 @@ function shakerMorningTask(first) {
   return {
     id: 'shaker-am', part: '朝', title: first ? '加振器を置く（初めて）' : '加振器を置き直す', role: '加振・打撃',
     desc: `${first ? 'S1（G1、入口の支承から 1.67 m）に印を付け、' : 'S1 の印の上に、'}加振器をじかに置き、L型クランプ4本で留め、水準器で確かめ、おもりを付ける。2人で運ぶ（本体は約 5 kg、PA05 は約 9 kg）。加振器の 3D は作成中で、図の箱は位置の目安。`,
-    ref: '手順書 §8、加振器とハンマーの使い方 §3・§4', shots: shakerMorningShots(first),
+    ref: '手順書 §8、加振器とハンマーの使い方 §3・§4', device: 'mass', shots: shakerMorningShots(first),
   };
 }
 
@@ -536,11 +537,11 @@ function massOffTask() {
   return {
     id: 'mass-off', part: '日中', title: '走行の前に、おもりを外す', role: '加振・打撃',
     desc: 'アプリの自動運転を止め、PA05 の出力を切ってから、上のナットを外し、ワッシャーの束を 353B33 ごと持ち上げて外す。加振器の本体とクランプは動かさない。',
-    ref: '手順書 §9 の5、加振器とハンマーの使い方 §7', shots: [{
+    ref: '手順書 §9 の5、加振器とハンマーの使い方 §7', device: 'mass', shots: [{
       id: 'mass-off', title: 'おもりを外した所', what: 'おもりを外した後の加振器の台', where: '橋の外（G1 の側の地面）から', dir: '真横から。縦長',
       must: ['台にボルトと下の2つのナットだけが残っている', '本体とクランプ4本はそのまま'],
       note: '動く部分を固定する部品があれば、外さずにそれで固定する（レックスに問い合わせ中）。',
-      view: { target: 'S1shaker', cam: { dir: [0, -1, 0.5], dist: 0.6 }, orient: 'tate', shaker: true },
+      view: { target: 'S1shaker', cam: { dir: [0, -1, 0.5], dist: 0.6 }, orient: 'tate', shaker: true, shakerParts: ['mark', 'body', 'rod', 'cables'] },
     }],
   };
 }
@@ -1100,7 +1101,7 @@ function prepMassTask() {
   return {
     id: 'prep-mass', part: '準備', title: 'おもりの準備（キットが届いた日、研究室）', role: '加振・打撃',
     desc: '加振器のおもりの、組み立ての前の準備。353B33 の接着用ベースを大ワッシャー1枚に貼り、動く部品を全部量る。組み立てた後は、ボルトを外さないと量れない。',
-    ref: '手順書 §0、加振器とハンマーの使い方 §3.2', shots: [
+    ref: '手順書 §0、加振器とハンマーの使い方 §3.2', device: 'mass', shots: [
       {
         id: 'mass-base', title: 'ベースを貼った大ワッシャー', what: '353B33 の接着用ベースを貼った大ワッシャー1枚', where: 'ワッシャーの真上から', dir: '真上から',
         must: ['ベースの位置（中心から 15.8 mm、平らな辺の1つが中心を向く）', '物差し（ワッシャーの中心からベースの中心まで）'],

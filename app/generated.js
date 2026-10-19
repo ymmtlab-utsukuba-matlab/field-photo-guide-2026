@@ -35,6 +35,16 @@ export const GEN = {
    "name": "MOSAIC",
    "from": "研究室の MOSAIC の手順書（commit 885c5c2）",
    "sha256": "2720846c86d5f5532f36b11fc9aac62b4996e1dfd14d2030e11cdaa8de03a427"
+  },
+  {
+   "name": "加振器とおもり（クランプは付け方が決まるまで描かない）",
+   "from": "研究室の現場試験の資料（commit b132c64）",
+   "sha256": "77d9e29ec0e8fd056fca2b817e37a58caaeecfcc9c98df68dd8f572d5b172888"
+  },
+  {
+   "name": "おもりの部品（分けて並べた形）",
+   "from": "研究室の現場試験の資料（commit b132c64）",
+   "sha256": "5757f3d21b96ba0e3ba4d72fe5da20e089cf50c06339d8347c8b952adfdd32a6"
   }
  ],
  "vehiclePoints": [
@@ -141,7 +151,8 @@ export const GEN = {
  "hub": 0.2685,
  "models": {
   "bridge": "models/bridge_retest.glb",
-  "truck": "models/truck_real.glb"
+  "truck": "models/truck_real.glb",
+  "shaker": "models/shaker_on_G1.glb"
  },
  "built": {
   "fieldDocsCommit": "f1ad5273986c",

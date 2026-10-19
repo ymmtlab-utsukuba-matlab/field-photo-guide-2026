@@ -25,6 +25,20 @@ export const B = (x, y, z) => new THREE.Vector3(X0 + x, z, -y);
 export const V = (x, y, z) => new THREE.Vector3(x, z, -y);
 const dirB = (d) => new THREE.Vector3(d[0], d[2], -d[1]);
 
+// 加振器の GLB（元のスレッドの shaker_on_G1.glb）の部品を、手順の段ごとに出し分ける組に分ける。名前は GLB のノード名
+function shakerPart(name) {
+  if (name === 'g1_girder') return null;   // G1 の 800 mm の切れ端。橋の G1 と重なるので出さない
+  if (name.startsWith('clamp')) return 'clamps';
+  if (name.startsWith('pet05')) return 'body';
+  if (name.startsWith('mark_s1')) return 'mark';
+  if (name.startsWith('cable_shaker')) return 'cables';
+  if (['rod', 'nut_lock', 'nut_support', 'tape_rod_mark'].includes(name)) return 'rod';
+  return 'mass';   // 大ワッシャー・上のナット・接着用ベース・スタッド・353B33 と、そのケーブルとテープ
+}
+// クランプの付け方は、クランプが届いて長さを測ってから決める（2026-10-19 元のスレッド）。決まるまで 3D に描かない
+const SHAKER_CLAMPS_SHOWN = false;
+const SHAKER_ALL = ['mark', 'body', 'rod', 'mass', 'cables'];
+
 function mat(color, opts = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.05, ...opts });
 }
@@ -255,7 +269,7 @@ export class Viewer {
     s.joints.visible = false;
     s.scene.add(s.joints);
 
-    // 加振器（Antigravity の GLB を元のスレッドが確かめたら models/shaker_on_G1.glb に写す。無いうちは目安の箱）
+    // 加振器（元のスレッドの GLB。単位 mm、原点 S1、+x が出口、+y が G2 の向きで、橋の向きと同じなので回さない。無いときは目安の箱）
     s.shaker = new THREE.Group();
     const S1 = GEN.points.find((p) => p.id === 'S1');
     s.shaker.position.copy(B(S1.x, S1.y, 0));
@@ -264,6 +278,11 @@ export class Viewer {
       try {
         const sg = await this.gltf(GEN.models.shaker);
         sg.scene.scale.setScalar(0.001);
+        s.shakerParts = { mark: [], body: [], rod: [], mass: [], cables: [], clamps: [] };
+        for (const o of sg.scene.children) {
+          const part = shakerPart(o.userData.name || o.name);
+          if (part) s.shakerParts[part].push(o); else o.visible = false;
+        }
         s.shaker.add(sg.scene);
         s.shakerReal = true;
       } catch (e) { s.shakerReal = false; }
@@ -514,6 +533,13 @@ export class Viewer {
       s.joints.visible = !!view.joints;
       s.joints.traverse((o) => { if (o.userData.isLabel) o.visible = !!view.joints; });   // r160 の CSS2D は親の表示を見ないので、札も切り替える
       s.shaker.visible = view.shaker !== false && (view.shaker === true || !!view.shakerOn);
+      if (s.shakerParts) {
+        const want = new Set(view.shakerParts || SHAKER_ALL);
+        for (const [k, list] of Object.entries(s.shakerParts)) {
+          const on = want.has(k) && (k !== 'clamps' || SHAKER_CLAMPS_SHOWN);
+          list.forEach((o) => { o.visible = on; });
+        }
+      }
       if (view.state === 'heavy' && s.damage) {
         const box = new THREE.Box3().setFromObject(s.damage);
         const helper = new THREE.Box3Helper(box, COLORS.hi);
@@ -624,6 +650,9 @@ export class Viewer {
     this.legend.textContent = view.legend || '';
     this.legend.hidden = !view.legend;
     if (view.msg) { this.msg.hidden = false; this.msg.textContent = view.msg; }
+    else if (isBridge && s.shakerReal && s.shaker.visible && !SHAKER_CLAMPS_SHOWN && view.target === 'S1shaker') {
+      this.msg.hidden = false; this.msg.textContent = 'クランプは、付け方が決まるまで描いていない';
+    }
     this.setMode(same && this.mode === 'cam' && C ? 'cam' : 'over', true);
     this._startPulse();
   }

@@ -144,8 +144,8 @@ export const GEN = {
   "truck": "models/truck_real.glb"
  },
  "built": {
-  "fieldDocsCommit": "32b7cfb31063",
-  "sensorPositionsSha256": "1ee4fb7b370e3344c1b505e34ec44a3c2057fd8e4e99bc7caabfeb5969591d2b",
+  "fieldDocsCommit": "c2931e9b557c",
+  "sensorPositionsSha256": "d27b32d9ae4bb6880e88bed53645cc05bc0003224f123f3db257e768b073e825",
   "dates": {
    "1": "20261028",
    "2": "20261029",
@@ -757,7 +757,7 @@ export const GEN = {
   {
    "id": "SF1",
    "side": "BRIDGE",
-   "device": "加速度計 353B33（ハンマリングキット GK291D50。DHO924S の CH2 で記録）",
+   "device": "加速度計 353B33（ハンマリングキット GK291D50。DHO914S の CH2 で記録）",
    "type": "－",
    "pos": "－",
    "girder": "",

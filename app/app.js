@@ -1,6 +1,7 @@
 // 画面の切り替え・「撮った」の印・時計。写真は受け取らず、保存しない。端末に置くのは「撮った」の印と時刻だけ（localStorage）。
 import { GEN } from './generated.js';
 import { DAYS, DEVICES, tasksFor, unitOf, svgFigure, BRIDGE_ORDER, PAPER, PAPER_RULES, PAPER_HINTS } from './content.js';
+import { PROCEDURE_COMMIT } from './procedure.js';
 
 const $main = document.getElementById('main');
 const KEY_MARKS = 'fpg2026.marks.v1';
@@ -59,6 +60,7 @@ function todayDay() {
   return null;
 }
 const dayInfo = (n) => DAYS.find((d) => d.n === n);
+const dayName = (d) => d.label || `${d.n}日目`;
 const two = (k) => String(k).padStart(2, '0');
 // 写真の番号。1つの指示に写真1枚が対応する。記録の写真は「何日目-作業の番号-写真の番号」、論文用は「論文-番号」（どの日に撮っても同じ）
 function photoNo(n, t, s) {
@@ -90,17 +92,17 @@ async function getViewer() {
 
 // ---------- 日の画面 ----------
 function dayChips(cur) {
-  return `<div class="days" role="tablist">${DAYS.map((d) => `<a class="day${d.n === cur ? ' on' : ''}" href="#/day/${d.n}" role="tab" aria-selected="${d.n === cur}"><b>${d.n}日目</b><span>${esc(d.date)}${d.state ? '・' + esc(d.state) : ''}</span></a>`).join('')}</div>`;
+  return `<div class="days" role="tablist">${DAYS.map((d) => `<a class="day${d.n === cur ? ' on' : ''}" href="#/day/${d.n}" role="tab" aria-selected="${d.n === cur}"><b>${esc(dayName(d))}</b><span>${esc(d.date)}${d.state ? '・' + esc(d.state) : ''}</span></a>`).join('')}</div>`;
 }
 function renderDay(n) {
   setTab('steps');
   save(KEY_DAY, n);
   const d = dayInfo(n);
   const list = tasks(n);
-  const parts = ['朝', '日中', '夕方'];
-  const partName = { 朝: n >= 2 ? '朝（毎朝の作業を含む）' : '朝', 日中: '日中', 夕方: n >= 2 ? '夕方（毎日の終わりの作業を含む）' : '夕方' };
+  const parts = ['準備', '朝', '日中', '夕方'];
+  const partName = { 準備: '前日まで（研究室）', 朝: n >= 2 ? '朝（毎朝の作業を含む）' : '朝', 日中: '日中', 夕方: n >= 2 ? '夕方（毎日の終わりの作業を含む）' : '夕方' };
   let html = dayChips(n);
-  html += `<h1>${n}日目 ${esc(d.date)}${d.state ? `<span class="state-tag">橋：${esc(d.state)}</span>` : ''}</h1><p class="muted">${esc(d.title)}</p>`;
+  html += `<h1>${esc(dayName(d))} ${esc(d.date)}${d.state ? `<span class="state-tag">橋：${esc(d.state)}</span>` : ''}</h1><p class="muted">${esc(d.title)}</p>`;
   if (n >= 2) html += `<p class="note info">雨の日は計測せず、それ以降を1日ずつ延期する（予備日は 11/3）。延期したら、日付ではなく「何日目」で選ぶ。</p>`;
   const lastToday = PAPER.filter((p) => p.last === n && !marks[paperKey(p)]);
   const missed = PAPER.filter((p) => p.last < n && !marks[paperKey(p)]);
@@ -115,7 +117,7 @@ function renderDay(n) {
     html += `<div class="section-title">${esc(partName[part])}</div><div class="cards">`;
     for (const t of ts) {
       if (t.nophoto) {
-        html += `<div class="card nophoto"><div class="card-head"><span class="card-title">${esc(t.title)}</span><span class="card-count">写真なし</span></div><div class="card-desc">${esc(t.desc)}</div><div class="card-desc">${esc(t.ref)}</div></div>`;
+        html += `<a class="card nophoto" href="#/day/${n}/t/${t.id}"><div class="card-head"><span class="card-title">${esc(t.title)}</span><span class="card-count">写真なし・手順 ${t.steps.length}</span></div><div class="card-desc">${esc(t.desc)}</div></a>`;
         continue;
       }
       const pr = progress(n, t);
@@ -123,7 +125,7 @@ function renderDay(n) {
       const done = pr && pr.done === pr.all;
       const tno = t.paper ? '論文' : `${n}-${two(list.filter((x) => x.shots && !x.paper).indexOf(t) + 1)}`;
       html += `<a class="card${t.paper ? ' paper' : ''}" href="#/day/${n}/t/${t.id}"><div class="card-head"><span class="card-title"><span class="tno">${tno}</span> ${esc(t.title)}</span><span class="card-count">${done ? '<span class="done-tag">済</span> ' : ''}${count}</span></div>`
-        + `<div class="card-desc">${esc(t.role ? '担当：' + t.role : '')}${t.onlyIfAttached ? '（付けた日だけ）' : ''}</div>`
+        + `<div class="card-desc">${esc(t.role ? '担当：' + t.role : '')}${t.onlyIfAttached ? '（付けた日だけ）' : ''}${t.steps && t.steps.length ? `・手順 ${t.steps.length}` : ''}</div>`
         + (pr ? `<div class="bar"><i style="width:${(100 * pr.done / pr.all).toFixed(0)}%"></i></div>` : '') + '</a>';
     }
     html += '</div>';
@@ -139,20 +141,33 @@ function renderTask(n, id) {
   setTab('steps');
   const t = tasks(n).find((x) => x.id === id);
   if (!t) return renderDay(n);
-  const first = t.shots.findIndex((s) => !marks[keyOf(n, t, s)]);
-  let html = `<a class="back" href="#/day/${n}">← ${n}日目の一覧</a><h1>${esc(t.title)}</h1>`;
+  const shots = t.shots || [];
+  const first = shots.findIndex((s) => !marks[keyOf(n, t, s)]);
+  let html = `<a class="back" href="#/day/${n}">← ${esc(dayName(dayInfo(n)))}の一覧</a><h1>${esc(t.title)}</h1>`;
   html += `<p>${esc(t.desc)}</p><p class="small muted">${esc(t.ref)}${t.role ? '　担当：' + esc(t.role) : ''}</p>`;
-  if (t.repeat) html += '<p class="note info">この作業の写真は、起きたときにそのつど撮る見本です（「撮った」の印は付けない）。</p>';
+  if (t.steps && t.steps.length) {
+    html += `<h2>手順</h2><ol class="steps">${t.steps.map((st, k) => {
+      const ph = shots.filter((s) => s.step === k + 1);
+      const links = ph.slice(0, 4).map((s) => `<a href="#/day/${n}/t/${t.id}/s/${shots.indexOf(s) + 1}">${esc(photoNo(n, t, s))}</a>`).join('・');
+      const more = ph.length > 4 ? ` ほか ${ph.length - 4} 枚` : '';
+      return `<li><span>${esc(st.t)}</span>${ph.length ? `<div class="step-photos">この段で撮る写真（${ph.length} 枚）：${links}${more}</div>` : ''}</li>`;
+    }).join('')}</ol>`;
+  }
+  if (t.repeat) html += '<p class="note info">この作業の写真は、起きたときにそのつど撮る（1件に1枚。「撮った」の印は付けない）。</p>';
   if (t.paper) html += `<div class="note info"><b>撮り方の決まり</b><ul class="rules">${PAPER_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul><a href="#/paper">論文用の写真の全部と、撮れる日の一覧</a></div>`;
   const devs = [t.device, t.device2].filter(Boolean);
   if (devs.length) html += `<p>${devs.map((k) => `<button class="btn" data-dev="${k}">機器を見る：${esc(DEVICES[k].name)}</button>`).join(' ')}</p>`;
-  if (!t.repeat) html += `<p><a class="btn primary" href="#/day/${n}/t/${t.id}/s/${(first < 0 ? 0 : first) + 1}">${first < 0 ? 'はじめから見直す' : first === 0 ? '1枚目から撮る' : `${first + 1}枚目から続ける`}</a></p>`;
-  html += '<ol class="shots">' + t.shots.map((s, i) => {
-    const at = marks[keyOf(n, t, s)];
-    const tag = !t.paper || at ? '' : s.last === n ? '<span class="when alert">今日が最後</span>'
-      : s.due <= n ? `<span class="when alert">今日撮る（最後は ${s.last}日目）</span>` : `<span class="when muted">${s.due}日目に撮る（最後は ${s.last}日目）</span>`;
-    return `<li><a class="${at ? 'done' : ''}" href="#/day/${n}/t/${t.id}/s/${i + 1}"><span class="num">${i + 1}</span><span class="t"><span class="pno">${esc(photoNo(n, t, s))}</span> ${esc(s.title)}${at ? `<span class="when">撮った ${t.paper ? mmdd_hhmm(new Date(at)) : hhmmss(new Date(at))}</span>` : tag}</span></a></li>`;
-  }).join('') + '</ol>';
+  if (shots.length) {
+    if (!t.repeat) html += `<p><a class="btn primary" href="#/day/${n}/t/${t.id}/s/${(first < 0 ? 0 : first) + 1}">${first < 0 ? 'はじめから見直す' : first === 0 ? '1枚目から撮る' : `${first + 1}枚目から続ける`}</a></p>`;
+    html += `<h2>写真（${shots.length} 枚）</h2><ol class="shots">` + shots.map((s, i) => {
+      const at = marks[keyOf(n, t, s)];
+      const tag = !t.paper || at ? '' : s.last === n ? '<span class="when alert">今日が最後</span>'
+        : s.due <= n ? `<span class="when alert">今日撮る（最後は ${s.last}日目）</span>` : `<span class="when muted">${s.due}日目に撮る（最後は ${s.last}日目）</span>`;
+      return `<li><a class="${at ? 'done' : ''}" href="#/day/${n}/t/${t.id}/s/${i + 1}"><span class="num">${i + 1}</span><span class="t"><span class="pno">${esc(photoNo(n, t, s))}</span> ${esc(s.title)}${at ? `<span class="when">撮った ${t.paper ? mmdd_hhmm(new Date(at)) : hhmmss(new Date(at))}</span>` : tag}</span></a></li>`;
+    }).join('') + '</ol>';
+  } else {
+    html += '<p class="muted">この作業に写真はない。</p>';
+  }
   $main.innerHTML = html;
   $main.querySelectorAll('[data-dev]').forEach((b) => b.addEventListener('click', () => openDevice(b.dataset.dev)));
 }
@@ -170,7 +185,8 @@ async function renderShot(n, id, idx) {
   const next = i < t.shots.length - 1 ? `#/day/${n}/t/${t.id}/s/${i + 2}` : `#/day/${n}/t/${t.id}`;
   let html = `<div class="shot-view"><div class="viewer-wrap" id="vw"></div><div class="info">`;
   html += `<a class="back" href="#/day/${n}/t/${t.id}">← ${esc(t.title)}</a>`;
-  html += `<div class="shot-no">${n}日目・この作業の ${i + 1} / ${t.shots.length} 枚目</div><div class="photo-no">写真の番号 <b>${esc(photoNo(n, t, s))}</b>（この指示に写真1枚）</div><h1>${esc(s.title)}</h1>`;
+  html += `<div class="shot-no">${esc(dayName(dayInfo(n)))}・この作業の ${i + 1} / ${t.shots.length} 枚目</div><div class="photo-no">写真の番号 <b>${esc(photoNo(n, t, s))}</b>（この指示に写真1枚）</div><h1>${esc(s.title)}</h1>`;
+  if (s.step && t.steps[s.step - 1]) html += `<p class="step-ctx"><b>手順の ${s.step}</b>：${esc(t.steps[s.step - 1].t)}</p>`;
   html += `<dl class="kv"><dt>撮る物</dt><dd>${esc(s.what)}</dd><dt>撮る所</dt><dd>${esc(s.where)}</dd><dt>向き</dt><dd>${esc(s.dir)}</dd>`
     + (s.paper ? `<dt>使い道</dt><dd>${esc(s.use)}</dd><dt>撮る日</dt><dd>${s.due}日目に撮る（撮れるのは${esc(dayRange(s.days))}、最後は ${s.last}日目）</dd>` : '') + '</dl>';
   if (s.paper) html += '<p class="small muted">論文用：この指示に1枚。写したくない物はフレームの外へ。人の顔とナンバーは写さない（「論文用」のページの決まり）。</p>';
@@ -288,7 +304,7 @@ function renderHelp() {
   html += '<h2>電波の弱い所で使う</h2><p>先に下を押すと、3D をこの端末に読み込んでおく（合わせて約 9 MB）。</p><p><button class="btn" id="prefetch" type="button">3D を全部読み込む</button> <span id="prefetchMsg" class="small muted"></span></p>';
   html += '<h2>図の見方</h2><ul><li>塗りつぶしの印は位置が決まった物、白抜き（点線の札）は案か未定の物。</li><li>橋の 3D は研究側が作った表示用の模型で、寸法の正本ではない。支承・継ぎ目・横桁・路面の形は目安。</li><li>加振器の 3D は作成中。いまは位置の目安の箱を描いている。</li></ul>';
   html += '<h2>決まっていないこと（図と文では「未定」）</h2><ul><li>温度センサ T1・T2 を付ける主桁と面</li><li>ばね上4台と車載の MOSAIC（VM1）を置く所</li><li>BM1 の置き場所（見つからなければ置かない）</li><li>跳躍の位置、静的載荷で止める位置</li><li>横桁のボルトの、端の中の番号の順（2日目の初めに決める）</li><li>撮った写真を集める場所</li></ul>';
-  html += `<h2>元の資料と出典</h2><p class="small">手順は、再試験の手順書・計画書・加振器とハンマーの使い方・設置表（研究室の現場試験の資料、commit ${esc(GEN.built.fieldDocsCommit)}）から作った。設置表の SHA-256：<code>${esc(GEN.built.sensorPositionsSha256.slice(0, 16))}…</code></p>`;
+  html += `<h2>元の資料と出典</h2><p class="small">手順と写真の指示は、再試験の手順書・計画書・加振器とハンマーの使い方・設置表（研究室の現場試験の資料、commit ${esc(PROCEDURE_COMMIT)}）から作った。手順の正本は手順書で、このアプリはその版を写している。設置表の SHA-256：<code>${esc(GEN.built.sensorPositionsSha256.slice(0, 16))}…</code></p>`;
   if (src.length) html += `<div class="table-wrap"><table><tr><th>3D</th><th>元</th><th>元の SHA-256</th></tr>${src.map((x) => `<tr><td>${esc(x.name)}</td><td class="small">${esc(x.from)}</td><td class="code">${esc(x.sha256.slice(0, 12))}…</td></tr>`).join('')}</table></div>`;
   html += '<p class="small muted">表示に three.js 0.160.0（MIT ライセンス）を jsDelivr から読み込む。</p>';
   $main.innerHTML = html;

@@ -2,6 +2,7 @@
 // 橋の座標は設置表と同じ（x：入口の支承の中心の線から出口へ、y：中心線から G4 の側へ、z：上フランジの上面から上。m）。
 // 撮る位置 cam.dir は [橋の向き, G4 の側, 上] の向きで、ねらう所からの距離 dist（m）。
 import { GEN } from './generated.js';
+import { STEPS, matches } from './procedure.js';
 
 const P = Object.fromEntries(GEN.points.map((p) => [p.id, p]));
 const UNIT = Object.fromEntries(GEN.assignment.map((a) => [a.point, a.device]));
@@ -13,6 +14,7 @@ const RIGHT_Y = +(BR.pathY - BR.track / 2).toFixed(2);   // 右の車輪の通�
 const m3 = (x) => `${x.toFixed(3)} m`;
 
 export const DAYS = [
+  { n: 0, date: '〜10/27', state: '', title: '前日までの準備（研究室）', label: '前日まで' },
   { n: 1, date: '10/28（水）', state: '', title: '試験B・橋の掃除・寸法・車両単独の試験・静的載荷・予行' },
   { n: 2, date: '10/29（木）', state: '健全', title: 'センサの設置。加振を1日中くり返す' },
   { n: 3, date: '10/30（金）', state: '健全', title: '午前に加振、午後に走行。夕方に軽度へ' },
@@ -113,6 +115,13 @@ function pressShots(id, first) {
   const entry = p.x < 1;
   const s = entry ? -1 : 1;
   const name = entry ? '入口' : '出口';
+  const thick = first ? [{
+    id: `${id}-t`, title: `${name}の帯の厚さ（保護材を含む）`,
+    what: `${name}の帯の、ゴムシートを含めた厚さ`,
+    where: '帯の端の横にしゃがんで', dir: '真横から。横長',
+    must: ['物差しかノギスを帯の端に当て、ゴムシートを含めた厚さの目盛りが読める'],
+    view: { target: id, cam: { dir: [s * 0.2, -1, 0.15], dist: 0.5 }, orient: 'yoko', labels: [id], floor: DECK },
+  }] : [];
   return [
     {
       id: `${id}-a`, title: `${name}の帯（置いた所）`,
@@ -144,7 +153,7 @@ function pressShots(id, first) {
       note: '足を離したら LED3 が消えることも確かめる（写真は踏んでいる所の1枚）。',
       view: { target: id, cam: { dir: [s * 0.4, 0.8, 0.9], dist: 0.8 }, orient: 'tate', labels: [id], floor: DECK },
     },
-  ];
+  ].flatMap((x, i) => (i === 0 ? [x, ...thick] : [x]));
 }
 
 function tempShots(id, first) {
@@ -254,14 +263,6 @@ function shakerMorningShots(first) {
   if (first) {
     shots.push(
       {
-        id: 'mass-weigh', title: 'おもりの部品の質量（組み立ての前）',
-        what: 'はかりに載せた、おもりの部品の全部',
-        where: 'はかりの正面から', dir: '表示が読める向き',
-        must: ['はかりの表示が読める', 'ボルト・ナット3個・大ワッシャー33枚・加速度計 353B33 が全部載っている'],
-        note: 'この質量が、力の計算の「動く部分の質量」になる（加振器とハンマーの使い方 §3.2）。組み立てた後は量れないので、先に量る。',
-        view: { svg: 'scale', svgText: ['ボルト', 'ナット 3', '大ワッシャー 33', '353B33'] },
-      },
-      {
         id: 'clamp-weigh', title: 'クランプ4本の質量',
         what: 'はかりに載せたクランプ4本',
         where: 'はかりの正面から', dir: '表示が読める向き',
@@ -281,7 +282,7 @@ function shakerMorningShots(first) {
     },
     {
       id: 'tarp-gear', title: '機器とケーブル（ブルーシートの上）',
-      what: 'G1 の側のブルーシートの上の、電力増幅器 PA05・オシロスコープ DHO924S・Mac・信号調整器 480E09',
+      what: 'G1 の側のブルーシートの上の、電力増幅器 PA05・オシロスコープ DHO914S・Mac・信号調整器 480E09',
       where: 'ブルーシートの外から', dir: '少し離れて全体。横長',
       must: ['4つの機器が全部写っている', 'PA05 の前面の外部入力（EXTSIG）に BNC がつながっている', 'ケーブルが通り道にかかっていない'],
       view: { target: TARP, cam: { dir: [-0.6, -1, 0.9], dist: 2.6 }, orient: 'yoko', shaker: true, targetLabel: 'ブルーシート（置き場所の目安）', ring: 0.4 },
@@ -463,7 +464,7 @@ function pressTask(first) {
 function tempTask(first) {
   return {
     id: 'temp', part: '朝', title: first ? '温度センサを付ける（初めて）' : '温度センサを付け直す', role: '設置・センサ',
-    desc: `T1（日なた側）に ${unitOf('T1')}、T2（日かげ側）に ${unitOf('T2')}。${first ? '貼った位置に印を付ける。' : '前の日の印の位置に、新しい熱伝導の両面テープで貼り直す。'}電池をつないで記録を始め、GNSS の測位と PPS を確かめる。雨が降り出したら、すぐ外す。`,
+    desc: `T1（日なた側）に ${unitOf('T1')}、T2（日かげ側）に ${unitOf('T2')}。${first ? '貼った位置に印を付ける。' : '前の日の印の位置に、新しい熱伝導の両面テープで貼り直す。'}モバイルバッテリーをつないで記録を始め、GNSS の測位と PPS を確かめる。雨が降り出したら、すぐ外す。`,
     ref: '手順書 §7.2', device: 'temp', shots: [...tempShots('T1', first), ...tempShots('T2', first)],
   };
 }
@@ -471,12 +472,12 @@ function tempTask(first) {
 function mosaicBridgeTask() {
   const bm1 = [
     {
-      id: 'BM1-a', title: 'BM1 置いた場所（周りの空）',
-      what: '三脚に固定した BM1 の MOSAIC と、周りの様子',
-      where: '少し離れた所から', dir: '空と周りの建物・木が入るように。横長',
-      must: ['三脚と MOSAIC', '周りに空をさえぎる物がない'],
-      note: 'BM1 の置き場所は未定。見つからなければ BM1 は置かない（その日の設置の記録 CSV から BM1 の行を消す。手順書 §7.1）。',
-      view: { target: [4.16, 0.6, 0.0], ring: 0.01, over: { at: [4.16, -9, 6], look: [4.16, 0.6, 0] }, msg: 'BM1 の置き場所は未定（橋のそばの空が開けた所）', orient: 'yoko' },
+      id: 'BM1-a', title: 'BM1 置いた場所（屋上と周りの空）',
+      what: '隣の建物の屋上に固定した BM1 の MOSAIC と、周りの様子',
+      where: '屋上の、BM1 から少し離れた所から', dir: '空と周りの建物・木が入るように。横長',
+      must: ['MOSAIC とアンテナと、固定した物', '周りに空をさえぎる物がない'],
+      note: 'BM1 は隣の建物の屋上（空が開けている。橋から 20 m 以内）。',
+      view: { target: [4.16, 0.6, 0.0], ring: 0.01, over: { at: [4.16, -9, 6], look: [4.16, 0.6, 0] }, msg: 'BM1 は隣の建物の屋上（橋から 20 m 以内。図に建物はない）', orient: 'yoko' },
     },
     {
       id: 'BM1-b', title: 'BM1 本体と名札', what: `BM1 の MOSAIC（${unitOf('BM1')}）`, where: '本体の正面から', dir: '斜め上から',
@@ -485,7 +486,7 @@ function mosaicBridgeTask() {
   ];
   return {
     id: 'mosaic', part: '朝', title: 'MOSAIC を置く（支承の四隅・BM1）', role: 'センサ',
-    desc: '支承の四隅（C1〜C4）に mosaic-X5、空の開けた固定点に BM1。試験の間ずっと記録する。アンテナは支承の真上にできるだけ近く置く。置き方（三脚か、橋に固定するか）は設置の担当が決める。',
+    desc: '支承の四隅（C1〜C4）に mosaic-X5、隣の建物の屋上に BM1。試験の間ずっと記録する。',
     ref: '手順書 §7.1', device: 'mosaic', shots: [...['C1', 'C2', 'C4', 'C3'].flatMap(cornerShots), ...bm1],
   };
 }
@@ -581,7 +582,7 @@ function eveningTasks(day) {
   if (day < 6) {
     list.push({
       id: 'shaker-off', part: '夕方', title: '加振器を外す', role: '加振・打撃',
-      desc: 'PA05・DHO924S・Mac の電源を切り、おもり（ワッシャーの束と 353B33）・クランプ4本・加振器の本体を外して屋内に置く。PA05・DHO924S・Mac は、もう1枚のブルーシートで覆う。',
+      desc: 'PA05・DHO914S・Mac の電源を切り、おもり（ワッシャーの束と 353B33）・クランプ4本・加振器の本体を外して屋内に置く。PA05・DHO914S・Mac は、もう1枚のブルーシートで覆う。',
       ref: '手順書 §8 の7', shots: [
         {
           id: 'S1-empty', title: '外した後の S1', what: '加振器を外した後の G1 の上フランジ', where: '橋の外（G1 の側の地面）から', dir: '斜め上から',
@@ -589,15 +590,15 @@ function eveningTasks(day) {
           view: { target: 'S1', cam: { dir: [-0.2, -1, 0.7], dist: 0.8 }, orient: 'yoko', labels: ['S1'], shaker: false },
         },
         {
-          id: 'tarp-cover', title: '機器の覆い', what: 'ブルーシートで覆った PA05・DHO924S・Mac', where: '少し離れた所から', dir: '全体が入るように',
+          id: 'tarp-cover', title: '機器の覆い', what: 'ブルーシートで覆った PA05・DHO914S・Mac', where: '少し離れた所から', dir: '全体が入るように',
           must: ['機器が全部覆われている', 'ケーブルの中継が地面から浮いている'],
           view: { target: TARP, ring: 0.4, targetLabel: 'ブルーシート（置き場所の目安）', cam: { dir: [-0.4, -1, 0.8], dist: 2.8 }, orient: 'yoko', shaker: false },
         },
       ],
     });
     list.push({
-      id: 'night-cover', part: '夕方', title: '電池を外し、ブルーシートをかぶせる', role: '設置・データ',
-      desc: '記録を止め、電池だけ外して回収し、充電する（センサは橋に残す）。加速度計24台に1枚ずつブルーシートをかぶせる。夜は記録しない。',
+      id: 'night-cover', part: '夕方', title: 'モバイルバッテリーを外し、ブルーシートをかぶせる', role: '設置・データ',
+      desc: '記録を止め、モバイルバッテリーだけ外して回収し、充電する（センサは橋に残す）。加速度計24台に1枚ずつブルーシートをかぶせる。夜は記録しない。',
       ref: '手順書 §1.2', shots: [
         {
           id: 'cover-in', title: 'かぶせた全体（入口の側から）', what: 'ブルーシートをかぶせた橋の全体', where: '入口の斜め前の地面から', dir: '橋の全体。横長',
@@ -979,16 +980,16 @@ export const PAPER = [
   P_({ id: 'rep-mosaic', order: 47, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '支承の四隅の MOSAIC（C1）', use: 'データセットの論文の方法（四隅の GNSS）、計測装置の論文（GNSS の記録の機器）',
     what: `C1 の MOSAIC（${unitOf('C1')}）とアンテナ、支承`, where: '橋の外（G1 の側）から', dir: 'アンテナと支承が入るように。横長', must: ['アンテナと支承の位置の関係', '本体と画面'],
     view: pv({ target: 'C1', labels: ['C1'], cam: { dir: [-0.6, -1, 0.6], dist: 1.3 } }) }),
-  P_({ id: 'rep-bm1', order: 48, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '基準の MOSAIC（BM1）と周りの空', use: 'データセットの論文の方法（基準局）',
-    what: 'BM1 の MOSAIC と三脚、周りの空', where: '少し離れた所から', dir: '空と周りの建物・木が入るように。横長', must: ['MOSAIC とアンテナ', '周りに空をさえぎる物がない様子'], note: 'BM1 を置かない場合は撮らない（置き場所は未定）。',
-    view: pv({ target: [4.16, 0.6, 0], ring: 0.01, over: { at: [4.16, -9, 6], look: [4.16, 0.6, 0] }, msg: 'BM1 の置き場所は未定（橋のそばの空が開けた所）' }) }),
+  P_({ id: 'rep-bm1', order: 48, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '基準の MOSAIC（BM1、隣の建物の屋上）と周りの空', use: 'データセットの論文の方法（基準局）',
+    what: '隣の建物の屋上の BM1 の MOSAIC と、周りの空', where: '屋上の、BM1 から少し離れた所から', dir: '空と周りの建物・木が入るように。横長', must: ['MOSAIC とアンテナ', '周りに空をさえぎる物がない様子'],
+    view: pv({ target: [4.16, 0.6, 0], ring: 0.01, over: { at: [4.16, -9, 6], look: [4.16, 0.6, 0] }, msg: 'BM1 は隣の建物の屋上（橋から 20 m 以内。図に建物はない）' }) }),
   // 加振と打撃
   P_({ id: 'rep-shaker', order: 50, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振器（S1、クランプとおもり）', use: 'データセットの論文の方法（加振の試験、図1）',
     what: 'G1 に留めた加振器（PET-05）・L型クランプ4本・おもり・加速度計 353B33', where: '橋の外（G1 の側）から', dir: '斜め上から。横長', must: ['加振器・クランプ4本・おもり・353B33 の全部', '物差し（大きさの基準）'], note: 'おもりを付けた後、走行の前に外す前に撮る。',
     view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [-0.35, -1, 0.6], dist: 0.75 } }) }),
-  P_({ id: 'rep-mass-parts', order: 49, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'おもりの部品（組み立ての前、並べて）', use: 'データセットの論文の方法（加振の力：動く部分の質量）',
+  P_({ id: 'rep-mass-parts', order: 49, days: [0, 2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'おもりの部品（組み立ての前、並べて）', use: 'データセットの論文の方法（加振の力：動く部分の質量）',
     what: '寸切りボルト・ナット3個・大ワッシャー33枚・加速度計 353B33 を並べた所', where: '真上から（白い紙か板の上に並べる）', dir: '真上から。横長',
-    must: ['部品の全部', '物差し（大きさの基準）', '背景に余計な物がない'], note: '組み立てる前に撮る（2日目の朝が最適）。',
+    must: ['部品の全部', '物差し（大きさの基準）', '背景に余計な物がない'], note: '組み立てる前に撮る（前日までの研究室で、部品を量るときが最適）。',
     view: { svg: 'scale', svgText: ['寸切りボルト', 'ナット 3', '大ワッシャー 33', '353B33'] } }),
   P_({ id: 'rep-clamp', order: 50.5, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'クランプの掴み方（1本の近く）', use: 'データセットの論文の方法（加振器の留め方）',
     what: 'L型クランプ1本の上の爪が四角い板の角に載り、下のねじがフランジを押し上げる所', where: '橋の外（G1 の側）から、低く', dir: '真横から。横長',
@@ -998,7 +999,7 @@ export const PAPER = [
     what: '加振器と、橋の入口の側の全体', where: '橋の外（G1 の側）から、離れて', dir: '横長', must: ['加振器と、橋の中での位置が分かる'],
     view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [-0.5, -1, 0.45], dist: 2.6 } }) }),
   P_({ id: 'rep-daq', order: 52, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振と打撃の記録の機器', use: 'データセットの論文の方法（加振の力の記録）',
-    what: '電力増幅器 PA05・オシロスコープ DHO924S・Mac・信号調整器 480E09 と、つないだケーブル', where: 'ブルーシートの外から', dir: '横長', must: ['4つの機器とケーブルのつながり', '機器の名前が読める'],
+    what: '電力増幅器 PA05・オシロスコープ DHO914S・Mac・信号調整器 480E09 と、つないだケーブル', where: 'ブルーシートの外から', dir: '横長', must: ['4つの機器とケーブルのつながり', '機器の名前が読める'],
     view: pv({ target: TARP, ring: 0.4, targetLabel: 'ブルーシート（置き場所の目安）', shaker: true, cam: { dir: [-0.5, -1, 0.9], dist: 2.4 } }) }),
   P_({ id: 'rep-hammer', order: 53, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '打撃の様子（H2）', use: 'データセットの論文の方法（打撃の試験）',
     what: 'インパクトハンマー 086D50 の先を H2 に当てて止めた所（叩かない）', where: '打つ人の後ろの斜めから', dir: 'ハンマーと叩く点が入るように。横長', must: ['ハンマーの先が H2 の印に当たっている', '打つ人の顔が写っていない'], note: '叩いている所ではなく、構えて止めた所を撮る。',
@@ -1061,7 +1062,7 @@ export const PAPER = [
 
 // 撮る日の目安（due）：遅くともこの日に撮る。最後の日（last）まで待たない。取り付けの日（2日目）は覆いをかぶせる前、1日目は何も付けていない橋と車両単独の試験
 const DUE = {
-  'bearing-in': 1, 'bearing-out': 1, joint: 1, 'bare-under': 1, 'rep-collect': 2, 'car-left': 1, 'car-right': 1, 'car-sprung': 1, 'car-unspr-f': 1, 'car-unspr-r': 1, 'car-vm1': 1,
+  'rep-mass-parts': 0, 'bearing-in': 1, 'bearing-out': 1, joint: 1, 'bare-under': 1, 'rep-collect': 2, 'car-left': 1, 'car-right': 1, 'car-sprung': 1, 'car-unspr-f': 1, 'car-unspr-r': 1, 'car-vm1': 1,
   'cg-intact': 2, 'cg-intact-bolts': 2, 'cg-light-bolts': 4, 'cg-removed': 4, 'cg-heavy': 5, 'cg-restored': 6,
   'run-g1': 3, 'run-press': 3,
 };
@@ -1080,13 +1081,13 @@ export const PAPER_HINTS = {
   'vehicle/FSL-a': ['car-sprung'], 'vehicle/FZL-a': ['car-unspr-f'], 'vehicle/RZL-a': ['car-unspr-r'], 'vehicle/VM1-a': ['car-vm1'], 'vehicle/mass-load': ['car-left', 'car-right'],
   'vehicle-alone/wheel-FL': ['test-wheel'], 'vehicle-alone/step-f': ['test-step'], 'vehicle-alone/board': ['test-board'], 'vehicle-alone/push-r': ['test-push'],
   'static/q2-on': ['test-static'], 'passage/gopro': ['run-g1', 'run-press'], 'ambient/ambient-start': ['run-shake', 'site', 'rep-hammer'],
-  'shaker-am/mass-weigh': ['rep-mass-parts'], 'shaker-am/S1-clamps': ['rep-clamp'], 'dims/cross-4': ['bare-under'], 'collect/collect-spr': ['rep-collect'],
+  'prep-mass/mass-weigh': ['rep-mass-parts'], 'shaker-am/S1-clamps': ['rep-clamp'], 'dims/cross-4': ['bare-under'], 'collect/collect-spr': ['rep-collect'],
 };
 
 export function paperTask(day) {
   const shots = PAPER.filter((p) => p.days.includes(day)).sort((a, b) => a.due - b.due || a.last - b.last || a.order - b.order);
   return {
-    id: 'paper', part: '日中', title: '論文用の写真', role: '撮る人', paper: true, shots,
+    id: 'paper', part: day === 0 ? '準備' : '日中', title: '論文用の写真', role: '撮る人', paper: true, shots,
     desc: `記録の写真とは別に、論文の図に使える写真を撮る。この日に撮れる物（${shots.length}か所）を、撮る日の目安が早い順に並べた（目安の日に撮る。最後の日まで待たない）。どの日に撮っても、撮った印は共通。`,
     ref: 'このアプリの「論文用」',
   };
@@ -1095,16 +1096,58 @@ export function paperTask(day) {
 // ---------- 日ごとの並び ----------
 const noPhoto = (id, part, title, desc, ref, role = '') => ({ id, part, title, desc, ref, role, nophoto: true });
 
+function prepMassTask() {
+  return {
+    id: 'prep-mass', part: '準備', title: 'おもりの準備（キットが届いた日、研究室）', role: '加振・打撃',
+    desc: '加振器のおもりの、組み立ての前の準備。353B33 の接着用ベースを大ワッシャー1枚に貼り、動く部品を全部量る。組み立てた後は、ボルトを外さないと量れない。',
+    ref: '手順書 §0、加振器とハンマーの使い方 §3.2', shots: [
+      {
+        id: 'mass-base', title: 'ベースを貼った大ワッシャー', what: '353B33 の接着用ベースを貼った大ワッシャー1枚', where: 'ワッシャーの真上から', dir: '真上から',
+        must: ['ベースの位置（中心から 15.8 mm、平らな辺の1つが中心を向く）', '物差し（ワッシャーの中心からベースの中心まで）'],
+        view: { svg: 'washer' },
+      },
+      {
+        id: 'mass-weigh', title: '動く部品の全部の質量', what: 'はかりに載せた、動く部品の全部',
+        where: 'はかりの正面から', dir: '表示が読める向き',
+        must: ['はかりの表示が読める', '寸切りボルト1本・ナット3個・大ワッシャー33枚（ベースを貼った1枚を含む）・353B33（スタッド付き）が全部載っている'],
+        note: 'この質量が、力の計算の「動く部分の質量」になる（台の 0.15 kg は別に足す）。',
+        view: { svg: 'scale', svgText: ['寸切りボルト 1', 'ナット 3', '大ワッシャー 33', '353B33'] },
+      },
+    ],
+  };
+}
+
+function withSteps(T, day) {
+  for (const t of T) {
+    const fn = STEPS[t.id];
+    t.steps = fn ? fn(day) : [];
+    for (const s of t.shots || []) {
+      const i = t.steps.findIndex((st) => (st.photos || []).some((pt) => matches(pt, s.id)));
+      if (i >= 0) s.step = i + 1;
+    }
+  }
+  return T;
+}
+
 export function tasksFor(day) {
+  return withSteps(tasksForDay(day), day);
+}
+
+function tasksForDay(day) {
   const T = [];
+  if (day === 0) {
+    T.push(noPhoto('prep', '準備', '前日までの準備', '全台の動作・SD・充電、試験A・B の準備、割り当て表、名札、アプリの確認など。', '手順書 §0', '全員'));
+    T.push(prepMassTask(), paperTask(0));
+    return T;
+  }
   if (day === 1) {
     T.push(noPhoto('testAB', '朝', '試験A の終了・試験B', 'センサの試験A（前の晩から）を終え、試験B を行う。手順はセンサの性能評価の手順書（このアプリには写さない）。', '手順書 §1.1', 'センサ・データ'));
     T.push(cleaningTask(false), cleaningTask(true));
     T.push(dimensionsTask(), jointStepTask(), hammerMarkTask(), deckBoltTask());
     T.push(vehicleInstallTask(1), vehicleAloneTask(), staticLoadTask());
-    T.push(noPhoto('rehearsal', '日中', '全機器の通し確認と予行の走行', '全機器を現地で動かし、数回走らせ、前処理を最後まで通す。電池の持ちと GNSS の受信も確かめる。', '手順書 §14', '全員'));
+    T.push(noPhoto('rehearsal', '日中', '全機器の通し確認と予行の走行', '全機器を現地で動かし、数回走らせ、前処理を最後まで通す。モバイルバッテリーの持ちと GNSS の受信も確かめる。', '手順書 §14', '全員'));
     T.push(paperTask(1), swapTask(), collectTask(1));
-    T.push(noPhoto('charge', '夕方', '電池を充電する', '試験A と予行で使った電池を、10/29 の設置までに充電する。', '計画書 §9 の13', 'センサ'));
+    T.push(noPhoto('charge', '夕方', 'モバイルバッテリーを充電する', '試験A と予行で使ったモバイルバッテリーを、10/29 の設置までに充電する。', '計画書 §9 の13', 'センサ'));
     return T;
   }
   const first = day === 2;
@@ -1113,7 +1156,7 @@ export function tasksFor(day) {
     T.push(syncTask(day, false));
     T.push(installTask());
   } else {
-    T.push(noPhoto('battery', '朝', '電池をつなぐ', '橋の24台に電池をつなぐ。小野橋梁センサは、つなぐ前に SW1・SW2 が off（±2 g）か見る。つないだら、ランプが点きっぱなし（記録中）になるのを確かめる。点滅は GPS の時刻待ち。', '手順書 §4 の5', '設置・センサ'));
+    T.push(noPhoto('battery', '朝', 'モバイルバッテリーをつなぐ', '橋の24台にモバイルバッテリーをつなぐ。小野橋梁センサは、つなぐ前に SW1・SW2 が off（±2 g）か見る。つないだら、ランプが点きっぱなし（記録中）になるのを確かめる。点滅は GPS の時刻待ち。', '手順書 §4 の5', '設置・センサ'));
   }
   T.push(iceTask(first));
   T.push(pressTask(first), tempTask(first));
@@ -1215,6 +1258,9 @@ export function svgFigure(kind, text = []) {
   }
   if (kind === 'bags') {
     return wrap([1, 2, 3, 4, 5, 6, 7, 8].map((i) => `<rect x="${30 + ((i - 1) % 4) * 78}" y="${40 + Math.floor((i - 1) / 4) * 70}" width="64" height="56" rx="8" fill="#eef2f6" stroke="#5a6b7b"/>${t(String(i), 62 + ((i - 1) % 4) * 78, 74 + Math.floor((i - 1) / 4) * 70, 18, 700)}`).join(''), '袋ごとの番号が読めるように、真上から撮る');
+  }
+  if (kind === 'washer') {
+    return wrap(`<circle cx="180" cy="100" r="70" fill="#d9e2ec" stroke="#5a6b7b" stroke-width="2"/><circle cx="180" cy="100" r="9" fill="#f4f6f8" stroke="#5a6b7b"/><rect x="211" y="88" width="24" height="24" rx="3" fill="#c98a5b" stroke="#5a6b7b"/><line x1="180" y1="100" x2="223" y2="100" stroke="#d6336c" stroke-width="2"/>${t('15.8 mm', 202, 92, 11, 700)}${t('ベース', 223, 132, 12)}${t('大ワッシャー（外径 50 mm）', 180, 186, 12)}`, 'ベースの位置と物差しが入るように、真上から撮る');
   }
   if (kind === 'member') {
     return wrap(`<rect x="40" y="150" width="60" height="22" fill="#9aa8b6"/><rect x="260" y="150" width="60" height="22" fill="#9aa8b6"/><rect x="50" y="110" width="260" height="40" rx="3" fill="#c98a5b" stroke="#5a6b7b"/><circle cx="66" cy="122" r="5" fill="#5a6b7b"/><circle cx="66" cy="138" r="5" fill="#5a6b7b"/><circle cx="294" cy="122" r="5" fill="#5a6b7b"/><circle cx="294" cy="138" r="5" fill="#5a6b7b"/><rect x="120" y="60" width="120" height="8" fill="#fff" stroke="#5a6b7b"/>${t('巻尺か物差し', 180, 52, 12)}${t(text[0] || '外した横桁', 180, 136, 13, 700)}`, '部材の全体と大きさの基準が入るように撮る');

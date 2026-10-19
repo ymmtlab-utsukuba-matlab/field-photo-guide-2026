@@ -1,6 +1,6 @@
 // 電波の弱い現場でも開けるように、読み込んだ物をこの端末に残す。写真・記録は扱わない。
 // VERSION は tools/build_site.py が、公開する中身から作る。
-const VERSION = '3d9fcc6337cf';
+const VERSION = '3e790d640d22';
 const CACHE = 'fpg2026-' + VERSION;
 const SHELL = ['./', 'index.html', 'app/style.css', 'app/app.js', 'app/viewer.js', 'app/content.js', 'app/generated.js', 'app/icon.svg', 'models/bridge_retest.glb'];
 
@@ -30,7 +30,7 @@ self.addEventListener('fetch', (e) => {
   }
   if (url.origin !== location.origin) return;
   // 画面と手順：新しい物を先に取り、取れなければ残してある物
-  e.respondWith(fetch(req).then((res) => {
+  e.respondWith(fetch(req, { cache: 'no-cache' }).then((res) => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
     return res;
   }).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match('index.html'))));

@@ -525,7 +525,8 @@ export class Viewer {
       }
     }
 
-    const targets = [].concat(view.target ?? []);
+    // 座標 [x, y, z] は1つの点。[].concat で平らにすると数の並びになってしまうので分けて扱う
+    const targets = view.target == null ? [] : Array.isArray(view.target) && typeof view.target[0] === 'number' ? [view.target] : [].concat(view.target);
     const T = targets.length ? this._point(s, targets[0]) : new THREE.Vector3();
     // 目印の札と強調
     const shown = new Set([...(view.labels || []), ...targets.filter((t) => typeof t === 'string')]);
@@ -675,7 +676,11 @@ export class Viewer {
     this.ringBase = mode === 'cam' ? 1 : 1.8;   // 全体の図では輪を大きくして見つけやすくする
     (this.rings || []).forEach((r) => r.scale.setScalar(this.ringBase));
     if (mode === 'cam') {
-      this.camera.fov = 52;
+      // スマートフォンの広角のカメラ（横 69°・縦 54°、4:3）に近い写り方にする。縦長の指示なら縦と横を入れ替える
+      const t = (deg) => Math.tan(THREE.MathUtils.degToRad(deg / 2));
+      const a = this.camera.aspect;
+      const [h, v] = view.orient === 'tate' ? [54, 69] : [69, 54];
+      this.camera.fov = Math.max(THREE.MathUtils.radToDeg(2 * Math.atan(t(h) / a)), v);
       this.camera.near = 0.01; this.camera.far = 200;
       this.camera.position.copy(C);
       this.controls.target.copy(T);

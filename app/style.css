@@ -201,3 +201,12 @@ tr:last-child td { border-bottom: none; }
 .chips button.on { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + var(--bar-h) + var(--safe-b) + 12px); background: #16202a; color: #fff; padding: 8px 14px; border-radius: 10px; font-size: 14px; z-index: 50; }
+
+/* 論文用の写真 */
+.card.paper { border: 2px solid var(--accent-2); }
+.note.alert { background: #ffe3e3; color: #16202a; border-left-color: #d6336c; }
+a.note { display: block; text-decoration: none; color: inherit; }
+a.note.alert { color: #16202a; }
+.when.alert { color: #d6336c; font-weight: 700; }
+.when.muted { color: var(--ink-2); }
+.rules { margin: 6px 0; padding-left: 1.2em; }

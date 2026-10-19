@@ -320,6 +320,8 @@ function vehicleShots(id) {
   const at = vp.at;
   const base = { scene: 'truck', target: id, labels: [id], orient: 'yoko' };
   const tbd = vp.decided ? '' : '置く所は未定（図の印は目安）。決めた所に付けて撮る。';
+  const uc = UNSPR_CAM[id];
+  const fix = (shot, k) => (uc ? { ...shot, where: uc[k][1], view: { ...shot.view, cam: { at: uc[k][0] }, floor: 0 } } : shot);
   return [
     {
       id: `${id}-a`, title: `${id} 付けた所（名札と向き）`,
@@ -330,6 +332,7 @@ function vehicleShots(id) {
       note: tbd || (unspr ? '付け方は SPRESENSE の配置のページ（研究室の BRDIGE_SPRESENSE の Tools/Manuals/vehicle_placement）。' : ''),
       view: { ...base, orient: 'tate', axes: id, cam: { dir: [front ? 0.3 : -0.3, side * 1, 0.5], dist: 1.1 } },
     },
+  ].map((x) => fix(x, 'a')).concat([
     {
       id: `${id}-x`, title: `${id} 前後（前車軸の中心から）`,
       what: '前車軸の中心から、前後の距離',
@@ -337,6 +340,7 @@ function vehicleShots(id) {
       must: ['巻尺の 0 が前輪の中心（ハブ）にある', `${id} の中心の目盛りが読める`],
       view: { ...base, cam: { dir: [0, side * 1, 0.15], dist: 1.6 }, tapes: [{ from: hub, to: [at[0], side * 0.645, GEN.hub], label0: '前輪の中心', label1: '前後' }] },
     },
+  ].map((x) => fix(x, 'x'))).concat([
     {
       id: `${id}-y`, title: `${id} 左右（車の中心線から）`,
       what: '車の中心線から、左右の距離',
@@ -344,6 +348,7 @@ function vehicleShots(id) {
       must: ['巻尺の 0 が車の中心線（前輪の左右の中央）にある', `${id} の中心の目盛りが読める`],
       view: { ...base, cam: { dir: [front ? 1 : -1, 0, 0.25], dist: 1.5 }, tapes: [{ from: [at[0], 0, at[2]], to: [at[0], at[1], at[2]], label0: '中心線', label1: '左右' }] },
     },
+  ].map((x) => fix(x, 'y'))).concat([
     {
       id: `${id}-z`, title: `${id} 高さ（地面から）`,
       what: '地面から、センサの中心までの高さ',
@@ -351,9 +356,20 @@ function vehicleShots(id) {
       must: ['巻尺の 0 が地面にある', `${id} の中心の目盛りが読める`],
       view: { ...base, orient: 'tate', cam: { dir: [0, side * 1, 0.1], dist: 1.2 }, tapes: [{ from: [at[0], at[1], 0.002], to: [at[0], at[1], at[2]], label0: '地面', label1: '高さ' }] },
     },
-  ];
+  ].map((x) => fix(x, 'z')));
 }
 
+// ばね下の4台は、タイヤ・フェンダー・バンパー・スペアタイヤの枠の陰になる。3D の視線（撮る所から箱まで物に当たらない）で確かめた撮る所
+const UNSPR_CAM = {
+  FZL: { a: [[-1.08, 0.76, 0.22], '前輪の後ろの、車の左の外から（しゃがんで、前に向けて）'], x: [[0.88, 0.69, 0.12], '前輪の前の、車の左の外から（低く）'],
+    y: [[0.72, 0.01, 0.06], '車の前の真ん中から（前のバンパーの下を、地面すれすれに）'], z: [[0.9, 0.45, 0.07], '車の前の左寄りから（地面すれすれに）'] },
+  FZR: { a: [[-1.08, -0.76, 0.22], '前輪の後ろの、車の右の外から（しゃがんで、前に向けて）'], x: [[0.88, -0.69, 0.12], '前輪の前の、車の右の外から（低く）'],
+    y: [[0.72, -0.01, 0.06], '車の前の真ん中から（前のバンパーの下を、地面すれすれに）'], z: [[0.9, -0.45, 0.07], '車の前の右寄りから（地面すれすれに）'] },
+  RZL: { a: [[-2.53, 0.13, 0.56], '車の後ろから（荷台の下をのぞいて）'], x: [[-3.49, 0.31, 0.06], '車の後ろから（地面すれすれに、前に向けて）'],
+    y: [[-3.2, 0.15, 0.12], '車の後ろから（地面すれすれに、前に向けて）'], z: [[-2.58, 0.31, 0.09], '車の後ろから（荷台の下、地面すれすれに）'] },
+  RZR: { a: [[-2.53, -0.04, 0.56], '車の後ろから（荷台の下をのぞいて）'], x: [[-3.43, -0.63, 0.06], '車の後ろの右寄りから（地面すれすれに、前に向けて）'],
+    y: [[-3.43, -0.63, 0.06], '車の後ろの右寄りから（地面すれすれに、前に向けて）'], z: [[-2.58, -0.22, 0.09], '車の後ろから（荷台の下、地面すれすれに）'] },
+};
 const VEHICLE_ORDER = ['FSL', 'FZL', 'RSL', 'RZL', 'RZR', 'RSR', 'FZR', 'FSR', 'VM1'];
 function vehicleInstallTask(day) {
   const shots = [{
@@ -643,9 +659,10 @@ function dimensionsTask() {
       const outside = g === 'G1' ? -1 : g === 'G4' ? 1 : 0;
       bearings.push({
         id: `bearing-${ei}-${g}`, title: `支承（${end}・${g}）`, what: `${end}の ${g} の支承`,
-        where: outside ? `橋の外（${g} の側）から` : `${end}の${ei === 0 ? '手前' : '先'}から、床版の下をのぞいて`, dir: '支承の全体が入るように',
+        where: outside ? `橋の外（${g} の側）から` : `${end}の端から、${g === 'G2' ? 'G2 と G3' : 'G3 と G2'} の間の床版の下に手を入れて、支承を横から`, dir: '支承の全体が入るように',
         must: ['固定か可動か分かる（支承の全体）', '物差しを当て、回転の中心の高さが読める'],
-        view: { target: `node:${node}`, cam: outside ? { dir: [ei === 0 ? -0.4 : 0.4, outside, 0.25], dist: 0.9 } : { dir: [ei === 0 ? -1 : 1, 0, 0.12], dist: 1.0 }, orient: 'yoko', targetLabel: `${end}・${g}`, ring: 0.18 },
+        note: outside ? '' : '主桁と台座のすき間が狭く、橋の端からは見えない（3D で確かめた）。主桁の間から横に撮る。',
+        view: { target: `node:${node}`, cam: outside ? { dir: [ei === 0 ? -0.4 : 0.4, outside, 0.25], dist: 0.9 } : { at: [x, y + (g === 'G2' ? 1.0 : -1.0), -0.27] }, floor: BR.groundZ, orient: 'yoko', targetLabel: `${end}・${g}`, ring: 0.18 },
       });
       void x; void y;
     });
@@ -786,7 +803,7 @@ function vehicleAloneTask() {
     { id: 'board', title: '板を越える（始める前）', what: '板と、板に向かう前輪', where: '車の横から', dir: '板と前輪が入るように', must: ['板の位置', '前輪'], note: '5回。この写真の時刻が5回の始め。', view: { scene: 'truck', target: [0.6, 0.645, 0.02], ring: 0.25, targetLabel: '板', cam: { dir: [0.4, 1, 0.5], dist: 1.8 }, orient: 'yoko' } },
     { id: 'wb-l', title: 'ホイールベース（左）', what: '前輪と後輪の中心の間（左）', where: '車の左の外から', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が前輪の中心', '後輪の中心の目盛り'], view: { scene: 'truck', target: [-1.9, 0.645, GEN.hub], ring: 0.12, cam: { dir: [0.2, 1, 0.2], dist: 1.4 }, orient: 'yoko', tapes: [{ from: [0, 0.645, GEN.hub], to: [-1.9, 0.645, GEN.hub], label0: '前輪の中心', label1: '後輪の中心' }] } },
     { id: 'wb-r', title: 'ホイールベース（右）', what: '前輪と後輪の中心の間（右）', where: '車の右の外から', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が前輪の中心', '後輪の中心の目盛り'], view: { scene: 'truck', target: [-1.9, -0.645, GEN.hub], ring: 0.12, cam: { dir: [0.2, -1, 0.2], dist: 1.4 }, orient: 'yoko', tapes: [{ from: [0, -0.645, GEN.hub], to: [-1.9, -0.645, GEN.hub], label0: '前輪の中心', label1: '後輪の中心' }] } },
-    { id: 'tread-f', title: 'トレッド（前）', what: '左右の前輪の中心の間', where: '車の前から', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が左の前輪の中心', '右の前輪の中心の目盛り'], view: { scene: 'truck', target: [0, -0.645, 0.02], ring: 0.1, cam: { dir: [1, 0, 0.4], dist: 1.6 }, orient: 'yoko', tapes: [{ from: [0.05, 0.645, 0.02], to: [0.05, -0.645, 0.02], label0: '左', label1: '右' }] } },
+    { id: 'tread-f', title: 'トレッド（前）', what: '左右の前輪の中心の間', where: '車の前の真ん中から（前のバンパーの下を、地面すれすれに）', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が左の前輪の中心', '右の前輪の中心の目盛り'], view: { scene: 'truck', target: [0.05, -0.645, 0.02], ring: 0.1, cam: { at: [1.6, 0, 0.1] }, floor: 0, orient: 'yoko', tapes: [{ from: [0.05, 0.645, 0.02], to: [0.05, -0.645, 0.02], label0: '左', label1: '右' }] } },
     { id: 'tread-r', title: 'トレッド（後）', what: '左右の後輪の中心の間', where: '車の後ろから', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が左の後輪の中心', '右の後輪の中心の目盛り'], view: { scene: 'truck', target: [-1.9, -0.64, 0.02], ring: 0.1, cam: { dir: [-1, 0, 0.4], dist: 1.6 }, orient: 'yoko', tapes: [{ from: [-1.95, 0.64, 0.02], to: [-1.95, -0.64, 0.02], label0: '左', label1: '右' }] } },
   );
   wheels.forEach(([k, nm, x, y]) => shots.push({
@@ -817,6 +834,226 @@ function staticLoadTask() {
   };
 }
 
+
+// ---------- 論文用の写真 ----------
+// 記録の写真とは別に、論文の図に使える質の写真を撮る。後で撮れない物（状態ごと・取り付けの前・撤去の前・1日目だけの試験）は、
+// 撮れる日 days と最後の日 last を持たせ、最後の日に撮っていなければ日の画面で知らせる。印は日によらず1つ（paper|id）。
+// 根拠：データセットの論文の図の計画（橋とセンサ・試験車とセンサ・取り付けは種類ごとの代表の写真）、計測装置の論文の原稿の空き（装置の図・運用）、
+// 論文誌の画像の規定（加工は全体に均一な明るさとコントラストまで、写り込みを消す加工は不可、元の画像を残す）と、人の写った画像の同意の規定。出典は SOURCES.md。
+export const PAPER_RULES = [
+  '横長で撮る（「縦長」とある物を除く）。ズームはしない（1倍のまま近づく）。撮る前にレンズを拭く。',
+  '撮る前に、写したくない物（工具・袋・余ったケーブル・ブルーシートの端・飲み物）をフレームの外へ出す。論文の写真は、後で物を消す加工ができない。',
+  '人の顔と車のナンバープレートを写さない。人が要る写真（打撃・跳躍・押して離す）は、後ろか横から撮る。',
+  '同じ構図で3枚撮る（ピントと手ぶれの失敗に備える）。',
+  '近くを撮る写真には、大きさの分かる物（物差しか巻尺）を入れる。',
+  '太陽を背にして撮る（逆光を避ける）。',
+  '撮った写真は加工しない。元のファイルのまま集める。',
+];
+const PAPER_BRIDGE_VIEWS = [
+  ['g1', 'G1 の側の斜め前から', { at: [-3.0, -6.5, 1.3] }],
+  ['side', 'G1 の側の真横から（橋の全長が入る）', { at: [4.16, -8.5, 1.1] }],
+  ['out', '出口の側の斜め（G4 の側）から', { at: [11.5, 6.5, 1.5] }],
+  ['deck', '床版の上を、入口から出口へ', { at: [-1.6, 0.6, 1.4] }],
+];
+const pv = (extra) => ({ orient: 'yoko', ...extra });
+const P_ = (o) => ({ ...o, paper: true });
+export const PAPER = [
+  // 橋（1日目だけ：センサを付ける前）
+  ...PAPER_BRIDGE_VIEWS.map(([k, w, cam], i) => P_({
+    id: `bare-${k}`, order: 10 + i, days: [1], last: 1, group: '橋',
+    title: `センサを付ける前の橋：${w}`, use: 'データセットの論文の方法（橋の説明、図1）',
+    what: '掃除の後の、何も付けていない橋の全体', where: w, dir: '横長。橋の全体が入るように',
+    must: ['橋の全体（両端の支承まで）', '橋の上と周りに人・工具・機材がない'], note: '掃除が終わってから撮る。2日目にセンサを付けると、もう撮れない。',
+    view: pv({ target: k === 'deck' ? [5, 0.6, DECK] : [4.16, 0, -0.1], ring: 0.01, cam }),
+  })),
+  P_({ id: 'bare-under', order: 13.5, days: [1, 2, 3, 4, 5, 6], last: 6, group: '橋', title: '床版の下（横桁と横構、G3–G4 の間）', use: 'データセットの論文の方法（橋の部材の説明）',
+    what: '床版の下の横桁・横構・主桁', where: '入口の端の、G3 と G4 の間から、床版の下をのぞいて（低く、少し見上げる）', dir: '出口へ向けて、橋の向きに。横長',
+    must: ['横桁と横構', '主桁 G3・G4 の腹板'], note: '1日目（何も付けていない時）が最適。入口の端の横桁の下から見上げる（横桁が並ぶので、見えるのは手前の区間）。',
+    view: pv({ target: [0.7, 1.2, -0.1], ring: 0.01, deck: 0.25, cam: { at: [-0.7, 1.2, -0.3] }, floor: BR.groundZ }) }),
+  P_({ id: 'bearing-in', order: 14, days: [1, 2, 3, 4, 5, 6], last: 6, group: '橋', title: '支承（入口・G1）', use: 'データセットの論文の方法（境界の説明）',
+    what: '入口の G1 の支承と台座', where: '橋の外（G1 の側）から', dir: '支承の高さで。横長', must: ['支承の全体と、固定か可動かが分かる形', '物差し（大きさの基準）'],
+    view: pv({ target: 'node:bearing_x0.39_G1', targetLabel: '入口・G1 の支承', ring: 0.18, cam: { dir: [-0.4, -1, 0.15], dist: 0.9 } }) }),
+  P_({ id: 'bearing-out', order: 15, days: [1, 2, 3, 4, 5, 6], last: 6, group: '橋', title: '支承（出口・G1）', use: 'データセットの論文の方法（境界の説明）',
+    what: '出口の G1 の支承と台座', where: '橋の外（G1 の側）から', dir: '支承の高さで。横長', must: ['支承の全体と、固定か可動かが分かる形', '物差し（大きさの基準）'],
+    view: pv({ target: 'node:bearing_x8.71_G1', targetLabel: '出口・G1 の支承', ring: 0.18, cam: { dir: [0.4, -1, 0.15], dist: 0.9 } }) }),
+  P_({ id: 'joint', order: 16, days: [1, 2, 3, 4, 5, 6], last: 6, group: '橋', title: '床版の継ぎ目（J1、左の車輪の通り道）', use: 'データセットの論文の方法（継ぎ目の実測の説明）',
+    what: '継ぎ目 J1 と、左の車輪の通り道', where: '床版の上から', dir: '斜め上から。横長', must: ['継ぎ目の段差とすき間が分かる', '物差し（大きさの基準）'],
+    view: pv({ target: [BR.jointX[0], LEFT_Y, DECK], ring: 0.08, joints: true, targetLabel: 'J1', cam: { dir: [-0.6, 0.3, 0.8], dist: 0.8 }, floor: DECK }) }),
+  // 橋（全部の機器を付けた後）
+  ...PAPER_BRIDGE_VIEWS.map(([k, w, cam], i) => P_({
+    id: `inst-${k}`, order: 20 + i, days: [2, 3, 4, 5, 6], last: 6, group: '橋',
+    title: `機器を付けた後の橋：${w}`, use: 'データセットの論文の方法（図1：橋とセンサ）、計測装置の論文（装置の全体）',
+    what: 'センサ・アンテナ・感圧の帯・温度センサ・四隅の MOSAIC・加振器を付けた橋の全体', where: w, dir: '横長。橋の全体が入るように',
+    must: ['付けた機器が見える', '橋の上と周りに人がいない', 'ブルーシート・保冷剤の箱・工具が写っていない'], note: '2日目に付け終わったときが最適（覆いをかぶせる前）。6日目の撤去の前が最後。',
+    view: pv({ target: k === 'deck' ? [5, 0.6, DECK] : [4.16, 0, -0.1], ring: 0.01, cam, shaker: true }),
+  })),
+  // 損傷させる横桁（状態ごと。日を過ぎると撮れない）
+  P_({ id: 'cg-intact', order: 30, days: [2, 3], last: 3, group: '状態', title: '損傷させる横桁：健全', use: 'データセットの論文の方法（状態の説明、表2）',
+    what: '損傷させる横桁（G3–G4 の間、支間中央）の全体', where: 'G3 と G4 の間の、橋の下から（入口の側から支間中央に向けて）', dir: '横桁の全体と両端が入るように。横長',
+    must: ['横桁の全体', '両端のボルトと合いマーク'], note: '3日目の夕方にボルトを緩めると、もう撮れない。',
+    view: pv({ target: 'node:CG_x4.550_G3G4', state: 'intact', deck: 0.25, highlightDamage: true, cam: DAMAGE_CAM, floor: BR.groundZ, targetLabel: '損傷させる横桁', ring: 0.3, over: { dist: 3.4, elev: 45, turn: 20 } }) }),
+  P_({ id: 'cg-intact-bolts', order: 31, days: [2, 3], last: 3, group: '状態', title: '横桁の端のボルト：健全（G4 側）', use: 'データセットの論文の方法（状態の説明）',
+    what: 'G4 側の端のボルト4本と合いマーク', where: 'G3 と G4 の間の、橋の下から', dir: 'ボルトに向けて真っすぐ。横長',
+    must: ['4本のボルトと合いマーク', '物差し（大きさの基準）'], note: '3日目の夕方にボルトを緩めると、もう撮れない。',
+    view: pv({ target: 'bolts:G4', bolts: 'G4', state: 'intact', deck: 0.25, cam: { dir: [-0.45, -0.55, -0.7], dist: 0.45 }, floor: BR.groundZ, targetLabel: 'G4 側の端', ring: 0.09, over: { dist: 2.8, elev: 45, turn: 20 } }) }),
+  P_({ id: 'cg-light-bolts', order: 32, days: [3, 4], last: 4, group: '状態', title: '横桁の端のボルト：軽度（緩めた後、G4 側）', use: 'データセットの論文の方法（軽度の説明）',
+    what: '緩めた後のボルト4本と、ずれた合いマーク', where: 'G3 と G4 の間の、橋の下から', dir: 'ボルトに向けて真っすぐ。横長',
+    must: ['合いマークのずれ（回った量）が分かる', '物差し（大きさの基準）'], note: '3日目の夕方に緩めた後から、4日目の夕方に外すまで。',
+    view: pv({ target: 'bolts:G4', bolts: 'G4', state: 'light', deck: 0.25, cam: { dir: [-0.45, -0.55, -0.7], dist: 0.45 }, floor: BR.groundZ, targetLabel: 'G4 側の端（緩めた）', ring: 0.09, over: { dist: 2.8, elev: 45, turn: 20 } }) }),
+  P_({ id: 'cg-heavy', order: 33, days: [4, 5], last: 5, group: '状態', title: '横桁を外した所：重度', use: 'データセットの論文の方法（重度の説明、表2）',
+    what: '横桁を外した後の G3–G4 の間（支間中央）', where: 'G3 と G4 の間の、橋の下から（入口の側から支間中央に向けて）', dir: '空いた所と両側の主桁が入るように。横長',
+    must: ['横桁がない', '両側の主桁の、横桁を留めていた所'], note: '4日目の夕方に外した後から、5日目の夕方に付け直すまで。',
+    view: pv({ target: 'node:CG_x4.550_G3G4', state: 'heavy', deck: 0.25, cam: DAMAGE_CAM, floor: BR.groundZ, targetLabel: '外した横桁のあった所', ring: 0.3, over: { dist: 3.4, elev: 45, turn: 20 } }) }),
+  P_({ id: 'cg-removed', order: 34, days: [4], last: 4, group: '状態', title: '外した横桁（全体）', use: 'データセットの論文の方法（外した部材の説明）',
+    what: '外して仮置きの台に置いた横桁と、ボルト・添接板', where: '台の横から、少し離れて', dir: '部材の全体が入るように。横長',
+    must: ['横桁の全体', 'ボルト・ナット・添接板', '物差しか巻尺（大きさの基準）'], note: '4日目の夕方、外した後。',
+    view: { svg: 'member', svgText: ['外した横桁'] } }),
+  P_({ id: 'cg-restored', order: 35, days: [5, 6], last: 6, group: '状態', title: '損傷させる横桁：健全に戻した後', use: 'データセットの論文の方法（状態の説明）',
+    what: '付け直した横桁の全体', where: 'G3 と G4 の間の、橋の下から（入口の側から支間中央に向けて）', dir: '横桁の全体と両端が入るように。横長',
+    must: ['横桁の全体', '両端のボルトと新しい合いマーク'],
+    view: pv({ target: 'node:CG_x4.550_G3G4', state: 'intact', deck: 0.25, highlightDamage: true, cam: DAMAGE_CAM, floor: BR.groundZ, targetLabel: '付け直した横桁', ring: 0.3, over: { dist: 3.4, elev: 45, turn: 20 } }) }),
+  // 橋のセンサ（種類ごとの代表）
+  P_({ id: 'rep-imu-g1', order: 40, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '加速度計（IMU）の代表：G1 の上フランジ（U12）', use: 'データセットの論文の方法（取り付けの代表の写真）、計測装置の論文（運用）',
+    what: `U12 に付けた加速度計（${unitOf('U12')}）とアンテナ`, where: '橋の外（G1 の側）から', dir: '斜め上から。横長',
+    must: ['容器・磁石の台・アンテナと、上フランジ', '物差し（大きさの基準）'], note: '2日目の取り付けの時、覆いをかぶせる前が最適。後の日は覆いを外して撮り、すぐ戻す。',
+    view: pv({ target: 'U12', labels: ['U12'], cam: { dir: [-0.35, -0.8, 0.8], dist: 0.65 } }) }),
+  P_({ id: 'rep-imu-deck', order: 41, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '加速度計（IMU）の代表：床版の上（U23）', use: 'データセットの論文の方法（取り付けの代表の写真）、計測装置の論文（運用）',
+    what: `U23 に付けた加速度計（${unitOf('U23')}）とアンテナ`, where: '床版の上から', dir: '斜め上から。横長',
+    must: ['容器・磁石の台・アンテナと、床版', '物差し（大きさの基準）'], note: '2日目の取り付けの時、覆いをかぶせる前が最適。',
+    view: pv({ target: 'U23', labels: ['U23'], cam: { dir: [-0.5, 0.4, 0.9], dist: 0.65 } }) }),
+  P_({ id: 'rep-ono', order: 42, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '小野橋梁センサの代表：G1 の上フランジ（U13）', use: 'データセットの論文の方法（取り付けの代表の写真）',
+    what: `U13 に付けた小野橋梁センサ（${unitOf('U13')}）とアンテナ`, where: '橋の外（G1 の側）から', dir: '斜め上から。横長',
+    must: ['本体・磁石の台・アンテナと、上フランジ', '物差し（大きさの基準）'], note: '2日目の取り付けの時、覆いをかぶせる前が最適。',
+    view: pv({ target: 'U13', labels: ['U13'], cam: { dir: [-0.35, -0.8, 0.8], dist: 0.65 } }) }),
+  P_({ id: 'rep-bearing-pt', order: 43, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '支承の点のセンサ（E1）', use: 'データセットの論文の方法（支承の傾きを測る点）',
+    what: `E1 のセンサ（${unitOf('E1')}）と、その下の支承`, where: '橋の外（G1 の側）から', dir: 'センサと支承が両方入るように。横長',
+    must: ['センサと支承の位置の関係', '物差し（大きさの基準）'], note: 'E1 には触れない（離れて撮る）。',
+    view: pv({ target: 'E1', labels: ['E1'], cam: { dir: [-0.6, -1, 0.35], dist: 1.0 } }) }),
+  P_({ id: 'rep-cover', order: 44, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '日よけ（発泡スチロールと保冷剤）の付け方（U13）', use: 'データセットの論文の方法（熱への対策の説明）',
+    what: 'U13 の覆いと、中の保冷剤', where: '橋の外（G1 の側）から', dir: '斜め上から。横長', must: ['覆いの外側の全体（1枚）', 'ふたを開けた中の保冷剤の置き方（1枚）'],
+    view: pv({ target: 'U13', labels: ['U13'], cam: { dir: [-0.35, -0.8, 0.9], dist: 0.7 } }) }),
+  P_({ id: 'rep-press', order: 45, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '感圧センサ（入口）', use: 'データセットの論文の方法（進入・退出の記録）',
+    what: '入口の支承線の上の感圧の帯と、ロガー', where: '入口の手前の路面から', dir: '斜め上から。横長', must: ['帯の全体（ゴムシートをかぶせた形）と、左の車輪の通り道', 'ロガー', '物差しか巻尺（大きさの基準）'],
+    view: pv({ target: 'PRESS_P001', labels: ['PRESS_P001'], cam: { dir: [-1, 0.25, 0.8], dist: 1.6 }, floor: DECK }) }),
+  P_({ id: 'rep-temp', order: 46, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '温度センサ（T1）', use: 'データセットの論文の方法（鋼の温度の記録）',
+    what: '鋼に貼った温度の測定点の板と、ロガー・アンテナ', where: '板の正面から', dir: '横長', must: ['測定点の板と、貼った部材', 'ロガーとケーブル', '物差し（大きさの基準）'], note: '付ける主桁と面は未定。',
+    view: pv({ target: 'T1', labels: ['T1'], cam: { dir: [0, -1, 0.3], dist: 1.0 }, legend: 'T1・T2 を付ける主桁と面は未定' }) }),
+  P_({ id: 'rep-mosaic', order: 47, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '支承の四隅の MOSAIC（C1）', use: 'データセットの論文の方法（四隅の GNSS）、計測装置の論文（GNSS の記録の機器）',
+    what: `C1 の MOSAIC（${unitOf('C1')}）とアンテナ、支承`, where: '橋の外（G1 の側）から', dir: 'アンテナと支承が入るように。横長', must: ['アンテナと支承の位置の関係', '本体と画面'],
+    view: pv({ target: 'C1', labels: ['C1'], cam: { dir: [-0.6, -1, 0.6], dist: 1.3 } }) }),
+  P_({ id: 'rep-bm1', order: 48, days: [2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '基準の MOSAIC（BM1）と周りの空', use: 'データセットの論文の方法（基準局）',
+    what: 'BM1 の MOSAIC と三脚、周りの空', where: '少し離れた所から', dir: '空と周りの建物・木が入るように。横長', must: ['MOSAIC とアンテナ', '周りに空をさえぎる物がない様子'], note: 'BM1 を置かない場合は撮らない（置き場所は未定）。',
+    view: pv({ target: [4.16, 0.6, 0], ring: 0.01, over: { at: [4.16, -9, 6], look: [4.16, 0.6, 0] }, msg: 'BM1 の置き場所は未定（橋のそばの空が開けた所）' }) }),
+  // 加振と打撃
+  P_({ id: 'rep-shaker', order: 50, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振器（S1、クランプとおもり）', use: 'データセットの論文の方法（加振の試験、図1）',
+    what: 'G1 に留めた加振器（PET-05）・L型クランプ4本・おもり・加速度計 353B33', where: '橋の外（G1 の側）から', dir: '斜め上から。横長', must: ['加振器・クランプ4本・おもり・353B33 の全部', '物差し（大きさの基準）'], note: 'おもりを付けた後、走行の前に外す前に撮る。',
+    view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [-0.35, -1, 0.6], dist: 0.75 } }) }),
+  P_({ id: 'rep-mass-parts', order: 49, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'おもりの部品（組み立ての前、並べて）', use: 'データセットの論文の方法（加振の力：動く部分の質量）',
+    what: '寸切りボルト・ナット3個・大ワッシャー33枚・加速度計 353B33 を並べた所', where: '真上から（白い紙か板の上に並べる）', dir: '真上から。横長',
+    must: ['部品の全部', '物差し（大きさの基準）', '背景に余計な物がない'], note: '組み立てる前に撮る（2日目の朝が最適）。',
+    view: { svg: 'scale', svgText: ['寸切りボルト', 'ナット 3', '大ワッシャー 33', '353B33'] } }),
+  P_({ id: 'rep-clamp', order: 50.5, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'クランプの掴み方（1本の近く）', use: 'データセットの論文の方法（加振器の留め方）',
+    what: 'L型クランプ1本の上の爪が四角い板の角に載り、下のねじがフランジを押し上げる所', where: '橋の外（G1 の側）から、低く', dir: '真横から。横長',
+    must: ['上の爪と四角い板の角', '下のねじとフランジの下面', '物差し（大きさの基準）'],
+    view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [0.2, -1, 0.05], dist: 0.55 } }) }),
+  P_({ id: 'rep-shaker-wide', order: 51, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振器と橋（引いて）', use: 'データセットの論文の方法（加振の位置）',
+    what: '加振器と、橋の入口の側の全体', where: '橋の外（G1 の側）から、離れて', dir: '横長', must: ['加振器と、橋の中での位置が分かる'],
+    view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [-0.5, -1, 0.45], dist: 2.6 } }) }),
+  P_({ id: 'rep-daq', order: 52, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振と打撃の記録の機器', use: 'データセットの論文の方法（加振の力の記録）',
+    what: '電力増幅器 PA05・オシロスコープ DHO924S・Mac・信号調整器 480E09 と、つないだケーブル', where: 'ブルーシートの外から', dir: '横長', must: ['4つの機器とケーブルのつながり', '機器の名前が読める'],
+    view: pv({ target: TARP, ring: 0.4, targetLabel: 'ブルーシート（置き場所の目安）', shaker: true, cam: { dir: [-0.5, -1, 0.9], dist: 2.4 } }) }),
+  P_({ id: 'rep-hammer', order: 53, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '打撃の様子（H2）', use: 'データセットの論文の方法（打撃の試験）',
+    what: 'インパクトハンマー 086D50 で H2 を叩く所', where: '打つ人の後ろの斜めから', dir: 'ハンマーと叩く点が入るように。横長', must: ['ハンマーと叩く点（H2）', '打つ人の顔が写っていない'], note: '連写で撮る。',
+    view: pv({ target: 'H2', labels: ['H2'], cam: { dir: [0.8, -1, 0.45], dist: 2.0 } }) }),
+  P_({ id: 'rep-sync', order: 54, days: [2, 6], last: 6, group: '加振・打撃', title: '同時打撃（板に並べた全台）', use: 'データセットの論文の技術的な確認（時刻の確認）、計測装置の論文（時刻の確認）',
+    what: '板に並べて固定した全台と、木槌', where: '板の斜め上から', dir: '横長', must: ['全台が並んだ様子', '木槌', '人の顔が写っていない'], note: '2日目の設置の前か、6日目の撤去の後。',
+    view: { scene: 'sync', target: [0, 0, 0], cam: { at: [0.9, 0.5, 1.0] }, orient: 'yoko', over: { at: [1.4, 1.1, 1.5] }, legend: '並べ方は模式' } }),
+  // 試験車
+  P_({ id: 'car-left', order: 60, days: [1, 3, 4, 5, 6], last: 6, group: '試験車', title: '試験車の真横（左）', use: 'データセットの論文の方法（図2：試験車とセンサ）',
+    what: 'センサを付けた試験車の全体', where: '車の左の、真横から離れて', dir: '車の全体が入るように。横長', must: ['車の全体', 'ナンバープレートが写っていない（真横から）', '人が乗っていない・周りにいない'],
+    view: pv({ scene: 'truck', target: [-0.95, 0, 0.8], ring: 0.01, cam: { at: [-0.95, 5.2, 0.9] } }) }),
+  P_({ id: 'car-right', order: 61, days: [1, 3, 4, 5, 6], last: 6, group: '試験車', title: '試験車の真横（右）', use: 'データセットの論文の方法（図2：試験車とセンサ）',
+    what: 'センサを付けた試験車の全体', where: '車の右の、真横から離れて', dir: '車の全体が入るように。横長', must: ['車の全体', 'ナンバープレートが写っていない（真横から）', '人が乗っていない・周りにいない'],
+    view: pv({ scene: 'truck', target: [-0.95, 0, 0.8], ring: 0.01, cam: { at: [-0.95, -5.2, 0.9] } }) }),
+  P_({ id: 'car-sprung', order: 62, days: [1, 3, 4, 5, 6], last: 6, group: '試験車', title: 'ばね上の代表（FSL）', use: 'データセットの論文の方法（取り付けの代表の写真）、計測装置の論文（運用）',
+    what: `FSL の加速度計（${unitOf('FSL')}）と、付けた所`, where: '車の左の外から', dir: '斜めから。横長', must: ['本体と、付けた面', '物差し（大きさの基準）'],
+    view: pv({ scene: 'truck', target: 'FSL', labels: ['FSL'], cam: { dir: [0.3, 1, 0.5], dist: 0.9 } }) }),
+  P_({ id: 'car-unspr-f', order: 63, days: [1, 3, 4, 5, 6], last: 6, group: '試験車', title: 'ばね下の代表（前、FZL）', use: 'データセットの論文の方法（取り付けの代表の写真）、計測装置の論文（運用：二重の脱落防止）',
+    what: `FZL の加速度計（${unitOf('FZL')}）と、留め方`, where: '前輪の後ろの、車の左の外から（しゃがんで、前に向けて）', dir: '横長', must: ['本体・留め具・二重の脱落防止', 'ケーブルの通し方', '物差し（大きさの基準）'],
+    view: pv({ scene: 'truck', target: 'FZL', labels: ['FZL'], cam: { at: [-1.08, 0.76, 0.22] }, floor: 0 }) }),
+  P_({ id: 'car-unspr-r', order: 64, days: [1, 3, 4, 5, 6], last: 6, group: '試験車', title: 'ばね下の代表（後、RZL）', use: 'データセットの論文の方法（取り付けの代表の写真）、計測装置の論文（運用）',
+    what: `RZL の加速度計（${unitOf('RZL')}）と、留め方`, where: '後輪の前の、車の左の外から（地面すれすれに、後ろに向けて）', dir: '横長', must: ['本体・留め具・二重の脱落防止', 'ケーブルの通し方', '物差し（大きさの基準）'],
+    view: pv({ scene: 'truck', target: 'RZL', labels: ['RZL'], cam: { at: [-1.24, 0.48, 0.1] }, floor: 0 }) }),
+  P_({ id: 'car-vm1', order: 65, days: [1, 3, 4, 5, 6], last: 6, group: '試験車', title: '車載の MOSAIC（VM1）のアンテナ', use: 'データセットの論文の方法（車両の GNSS）、計測装置の論文（GNSS の記録の機器）',
+    what: `VM1 のアンテナと本体（${unitOf('VM1')}）`, where: '車の斜め前の上から（脚立）', dir: '横長', must: ['アンテナと、付けた所', '本体とケーブル'], note: '置く所は未定。ナンバープレートを写さない。',
+    view: pv({ scene: 'truck', target: 'VM1', labels: ['VM1'], cam: { dir: [0.4, 1, 0.7], dist: 1.3 } }) }),
+  // 1日目だけの試験
+  P_({ id: 'test-wheel', order: 70, days: [1], last: 1, group: '1日目の試験', title: '輪重の測定（台はかり）', use: 'データセットの論文の方法（車両のパラメータ）',
+    what: '台はかりに載った車輪', where: '車の横から', dir: '横長', must: ['車輪と台はかり', 'ナンバープレートが写っていない'],
+    view: pv({ scene: 'truck', target: [0, 0.645, 0.05], ring: 0.2, targetLabel: '前左', cam: { dir: [0.3, 1, 0.45], dist: 1.5 } }) }),
+  P_({ id: 'test-step', order: 71, days: [1], last: 1, group: '1日目の試験', title: '段差を落ちる試験', use: 'データセットの論文の方法（車両単独の試験）',
+    what: '段差の上の前輪（落ちる前）と、段差の板', where: '車の左の横から', dir: '横長', must: ['段差の板と前輪', 'ナンバープレートが写っていない'], note: '連写で撮る。',
+    view: pv({ scene: 'truck', target: [0, 0.645, 0.15], ring: 0.3, targetLabel: '前輪', cam: { dir: [0.15, 1, 0.3], dist: 2.2 } }) }),
+  P_({ id: 'test-board', order: 72, days: [1], last: 1, group: '1日目の試験', title: '板を越える試験', use: 'データセットの論文の方法（車両単独の試験）',
+    what: '板と、板を越える前輪', where: '車の左の横から', dir: '横長', must: ['板と前輪', 'ナンバープレートが写っていない'], note: '連写で撮る。',
+    view: pv({ scene: 'truck', target: [0.6, 0.645, 0.02], ring: 0.25, targetLabel: '板', cam: { dir: [0.3, 1, 0.35], dist: 2.2 } }) }),
+  P_({ id: 'test-push', order: 73, days: [1], last: 1, group: '1日目の試験', title: '押して離す試験', use: 'データセットの論文の方法（車両単独の試験）',
+    what: '車の後ろを押す手と、車', where: '押す人の横から', dir: '横長', must: ['押す所と手', '押す人の顔が写っていない', 'ナンバープレートが写っていない'],
+    view: pv({ scene: 'truck', target: [-2.9, 0, 0.9], ring: 0.15, targetLabel: '押す所', cam: { dir: [-0.6, 1, 0.4], dist: 2.4 } }) }),
+  P_({ id: 'test-static', order: 74, days: [1], last: 1, group: '1日目の試験', title: '静的載荷（車を止めた所）', use: 'データセットの論文の方法（静的載荷）',
+    what: '支間に止めた試験車と橋の全体', where: '橋の外（G1 の側）の真横から、離れて', dir: '橋と車の全体が入るように。横長', must: ['車と橋の全体', '橋の上と下に人がいない', 'ナンバープレートが写っていない（真横から）'],
+    view: pv({ target: [4.16, 0, 0], ring: 0.01, truckAt: 4.16, cam: { at: [4.16, -8.5, 1.1] } }) }),
+  // 走行と試験の様子
+  P_({ id: 'run-g1', order: 80, days: [3, 4, 5, 6], last: 6, group: '走行・全体', title: '走行中（G1 の側の真横から）', use: 'データセットの論文の方法（走行の説明）',
+    what: '橋の上を走る試験車と、橋の全体', where: '橋の外（G1 の側）の真横から、離れて', dir: '橋の全体が入るように。横長', must: ['車が支間の中ほどにいる', 'ナンバープレートが写っていない（真横から）', '橋の上と下に人がいない'], note: '連写で撮る。撮る人は決めた所から動かない。',
+    view: pv({ target: [4.16, 0, 0], ring: 0.01, truckAt: 5.1, cam: { at: [4.16, -8.5, 1.1] } }) }),
+  P_({ id: 'run-press', order: 81, days: [3, 4, 5, 6], last: 6, group: '走行・全体', title: '前輪が入口の感圧の帯を踏む所', use: 'データセットの論文の方法（進入の記録）',
+    what: '入口の帯と、帯を踏む左の前輪', where: '橋の外（G4 の側）の、入口の横から低く', dir: '横長', must: ['帯と前輪', 'ナンバープレートが写っていない（横から）'], note: '連写で撮る。橋に近づきすぎない（決めた所から撮る）。',
+    view: pv({ target: [0, LEFT_Y, DECK], ring: 0.25, truckAt: 0.0, targetLabel: '入口の帯', cam: { at: [0.0, 3.3, 0.35] } }) }),
+  P_({ id: 'run-shake', order: 82, days: [2, 3, 4, 5, 6], last: 6, group: '走行・全体', title: '加振の試験中（人のいない橋）', use: 'データセットの論文の方法（加振の試験）',
+    what: '加振している加振器と、人のいない橋', where: '橋の外（G1 の側）から、離れて', dir: '横長', must: ['加振器と橋', '橋の上と下に人がいない'], note: '加振の間は近づかない（離れた所から撮る）。',
+    view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [-0.7, -1, 0.5], dist: 3.0 } }) }),
+  P_({ id: 'rep-collect', order: 84, days: [1, 2, 3, 4, 5, 6], last: 6, group: '走行・全体', title: 'データの回収（SD を PC に写す所）', use: '計測装置の論文（運用：回収と照合）',
+    what: 'データ保管用の Mac・SD の読み取り機・外付けの SSD と、回収の画面', where: '机の斜め上から', dir: '横長', must: ['Mac・読み取り機・SSD', '画面（回収の途中）', '人の顔が写っていない'],
+    view: { svg: 'laptop', svgText: ['Collect_SD.command', '回収の途中の画面'] } }),
+  P_({ id: 'site', order: 83, days: [2, 3, 4, 5, 6], last: 6, group: '走行・全体', title: '現場の全体（周りと空）', use: 'データセットの論文の方法（現場の説明）、計測装置の論文（運用）',
+    what: '橋・機材の置き場・車の通り道と、周りの空', where: '橋から離れた所（入口の斜め）から', dir: '横長', must: ['橋と機材の全体', '空の開け具合', '人の顔が写っていない'],
+    view: pv({ target: [4.16, 0, 0], ring: 0.01, cam: { at: [-12, -10, 3] } }) }),
+].sort((a, b) => a.order - b.order);
+
+// 撮る日の目安（due）：遅くともこの日に撮る。最後の日（last）まで待たない。取り付けの日（2日目）は覆いをかぶせる前、1日目は何も付けていない橋と車両単独の試験
+const DUE = {
+  'bearing-in': 1, 'bearing-out': 1, joint: 1, 'bare-under': 1, 'rep-collect': 2, 'car-left': 1, 'car-right': 1, 'car-sprung': 1, 'car-unspr-f': 1, 'car-unspr-r': 1, 'car-vm1': 1,
+  'cg-intact': 2, 'cg-intact-bolts': 2, 'cg-light-bolts': 4, 'cg-removed': 4, 'cg-heavy': 5, 'cg-restored': 6,
+  'run-g1': 3, 'run-press': 3,
+};
+PAPER.forEach((p) => { p.due = DUE[p.id] ?? (p.days[0] === 1 && p.last === 1 ? 1 : p.days[0]); });
+
+// 記録の写真を撮るその場で、論文用の写真も撮るように案内する（作業の id/写真の id → 論文用の id）
+export const PAPER_HINTS = {
+  'clean-after/clean-after-g1': ['bare-g1'], 'clean-after/clean-after-g4': ['bare-out'], 'clean-after/clean-after-in': ['bare-deck', 'bare-side'],
+  'dims/bearing-0-G1': ['bearing-in'], 'dims/bearing-1-G1': ['bearing-out'], 'joints/j1L-step': ['joint'],
+  'install/U12-a': ['rep-imu-g1'], 'install/U23-a': ['rep-imu-deck'], 'install/U13-a': ['rep-ono'], 'install/E1-a': ['rep-bearing-pt'],
+  'install/route-G4': ['inst-g1', 'inst-side', 'inst-out', 'inst-deck'],
+  'ice/U13-ice': ['rep-cover'], 'press/PRESS_P001-a': ['rep-press'], 'temp/T1-b': ['rep-temp'], 'mosaic/C1-a': ['rep-mosaic'], 'mosaic/BM1-a': ['rep-bm1'],
+  'shaker-am/mass-on': ['rep-shaker', 'rep-shaker-wide'], 'shaker-am/tarp-gear': ['rep-daq'], 'sync/sync-row': ['rep-sync'], 'sync-after/sync-row': ['rep-sync'],
+  'bolts-intact/bolts-all': ['cg-intact', 'cg-intact-bolts'], 'state/state-all': ['cg-intact', 'cg-intact-bolts', 'cg-light-bolts', 'cg-heavy', 'cg-restored'],
+  'to-light/light-all': ['cg-light-bolts'], 'to-heavy/heavy-empty': ['cg-heavy'], 'to-heavy/heavy-mass': ['cg-removed'], 'to-intact/back-all': ['cg-restored'],
+  'vehicle/FSL-a': ['car-sprung'], 'vehicle/FZL-a': ['car-unspr-f'], 'vehicle/RZL-a': ['car-unspr-r'], 'vehicle/VM1-a': ['car-vm1'], 'vehicle/mass-load': ['car-left', 'car-right'],
+  'vehicle-alone/wheel-FL': ['test-wheel'], 'vehicle-alone/step-f': ['test-step'], 'vehicle-alone/board': ['test-board'], 'vehicle-alone/push-r': ['test-push'],
+  'static/q2-on': ['test-static'], 'passage/gopro': ['run-g1', 'run-press'], 'ambient/ambient-start': ['run-shake', 'site', 'rep-hammer'],
+  'shaker-am/mass-weigh': ['rep-mass-parts'], 'shaker-am/S1-clamps': ['rep-clamp'], 'dims/cross-4': ['bare-under'], 'collect/collect-spr': ['rep-collect'],
+};
+
+export function paperTask(day) {
+  const shots = PAPER.filter((p) => p.days.includes(day)).sort((a, b) => a.due - b.due || a.last - b.last || a.order - b.order);
+  return {
+    id: 'paper', part: '日中', title: '論文用の写真', role: '撮る人', paper: true, shots,
+    desc: `記録の写真とは別に、論文の図に使える写真を撮る。この日に撮れる物（${shots.length}か所）を、撮る日の目安が早い順に並べた（目安の日に撮る。最後の日まで待たない）。どの日に撮っても、撮った印は共通。`,
+    ref: 'このアプリの「論文用」',
+  };
+}
+
 // ---------- 日ごとの並び ----------
 const noPhoto = (id, part, title, desc, ref, role = '') => ({ id, part, title, desc, ref, role, nophoto: true });
 
@@ -828,7 +1065,7 @@ export function tasksFor(day) {
     T.push(dimensionsTask(), jointStepTask(), hammerMarkTask(), deckBoltTask());
     T.push(vehicleInstallTask(1), vehicleAloneTask(), staticLoadTask());
     T.push(noPhoto('rehearsal', '日中', '全機器の通し確認と予行の走行', '全機器を現地で動かし、数回走らせ、前処理を最後まで通す。電池の持ちと GNSS の受信も確かめる。', '手順書 §14', '全員'));
-    T.push(swapTask(), collectTask(1));
+    T.push(paperTask(1), swapTask(), collectTask(1));
     T.push(noPhoto('charge', '夕方', '電池を充電する', '試験A と予行で使った電池を、10/29 の設置までに充電する。', '計画書 §9 の13', 'センサ'));
     return T;
   }
@@ -862,6 +1099,7 @@ export function tasksFor(day) {
   if (day === 4) T.push(changeTask('heavy'));
   if (day === 5) T.push(changeTask('intact'));
   if (day === 6) T.push(removalTask(), syncTask(day, true));
+  T.push(paperTask(day));
   T.push(...eveningTasks(day));
   return T;
 }
@@ -939,6 +1177,9 @@ export function svgFigure(kind, text = []) {
   }
   if (kind === 'bags') {
     return wrap([1, 2, 3, 4, 5, 6, 7, 8].map((i) => `<rect x="${30 + ((i - 1) % 4) * 78}" y="${40 + Math.floor((i - 1) / 4) * 70}" width="64" height="56" rx="8" fill="#eef2f6" stroke="#5a6b7b"/>${t(String(i), 62 + ((i - 1) % 4) * 78, 74 + Math.floor((i - 1) / 4) * 70, 18, 700)}`).join(''), '袋ごとの番号が読めるように、真上から撮る');
+  }
+  if (kind === 'member') {
+    return wrap(`<rect x="40" y="150" width="60" height="22" fill="#9aa8b6"/><rect x="260" y="150" width="60" height="22" fill="#9aa8b6"/><rect x="50" y="110" width="260" height="40" rx="3" fill="#c98a5b" stroke="#5a6b7b"/><circle cx="66" cy="122" r="5" fill="#5a6b7b"/><circle cx="66" cy="138" r="5" fill="#5a6b7b"/><circle cx="294" cy="122" r="5" fill="#5a6b7b"/><circle cx="294" cy="138" r="5" fill="#5a6b7b"/><rect x="120" y="60" width="120" height="8" fill="#fff" stroke="#5a6b7b"/>${t('巻尺か物差し', 180, 52, 12)}${t(text[0] || '外した横桁', 180, 136, 13, 700)}`, '部材の全体と大きさの基準が入るように撮る');
   }
   if (kind === 'trouble') {
     return wrap(`<rect x="110" y="50" width="140" height="90" rx="10" fill="#e9edf1" stroke="#cc1a4d" stroke-width="3"/><circle cx="230" cy="66" r="7" fill="#cc1a4d"/><rect x="130" y="110" width="100" height="20" rx="4" fill="#fffbe6" stroke="#c79a00"/>${t('名札', 180, 125, 11, 700)}`, '名札と、異常の様子が両方入るように撮る');

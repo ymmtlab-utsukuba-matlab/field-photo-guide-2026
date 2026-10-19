@@ -1,6 +1,6 @@
 // 画面の切り替え・「撮った」の印・時計。写真は受け取らず、保存しない。端末に置くのは「撮った」の印と時刻だけ（localStorage）。
 import { GEN } from './generated.js';
-import { DAYS, DEVICES, tasksFor, unitOf, svgFigure, BRIDGE_ORDER } from './content.js';
+import { DAYS, DEVICES, tasksFor, unitOf, svgFigure, BRIDGE_ORDER, PAPER, PAPER_RULES, PAPER_HINTS } from './content.js';
 
 const $main = document.getElementById('main');
 const KEY_MARKS = 'fpg2026.marks.v1';
@@ -17,12 +17,24 @@ function save(key, value) {
 }
 let marks = load(KEY_MARKS, {});
 const markKey = (day, task, shot) => `${day}|${task}|${shot}`;
+// 論文用の写真は、どの日に撮っても同じ印（日をまたいで「撮った」が分かるように）
+const keyOf = (n, t, s) => (t.paper ? `paper|${s.id}` : markKey(n, t.id, s.id));
+const paperKey = (p) => `paper|${p.id}`;
 const hhmmss = (d) => d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+const mmdd_hhmm = (d) => `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
 
-function setMark(day, task, shot, on) {
-  const k = markKey(day, task, shot);
+function setMark(k, on) {
   if (on) marks[k] = new Date().toISOString(); else delete marks[k];
   if (!save(KEY_MARKS, marks)) toast('この端末では印を残せません（ブラウザの設定）。');
+}
+const dayRange = (days) => (days.length === 1 ? `${days[0]}日目だけ` : days.every((d, i) => i === 0 || d === days[i - 1] + 1) ? `${days[0]}〜${days[days.length - 1]}日目` : days.map((d) => `${d}`).join('・') + '日目');
+function paperStatus(p, n) {
+  if (marks[paperKey(p)]) return ['done', '済'];
+  if (p.last < n) return ['missed', '撮れる日を過ぎた'];
+  if (p.last === n) return ['last', '今日が最後'];
+  if (p.due <= n && p.days.includes(n)) return ['due', p.due < n ? `目安の ${p.due}日目を過ぎた` : '今日撮る'];
+  if (p.days.includes(n)) return ['now', `${p.due}日目に撮る`];
+  return ['later', `${p.due}日目に撮る`];
 }
 
 // ---------- 時計 ----------
@@ -51,7 +63,7 @@ const taskCache = {};
 function tasks(n) { return (taskCache[n] ??= tasksFor(n)); }
 function progress(n, t) {
   if (!t.shots || t.repeat) return null;
-  const done = t.shots.filter((s) => marks[markKey(n, t.id, s.id)]).length;
+  const done = t.shots.filter((s) => marks[keyOf(n, t, s)]).length;
   return { done, all: t.shots.length };
 }
 function setTab(name) {
@@ -83,6 +95,13 @@ function renderDay(n) {
   let html = dayChips(n);
   html += `<h1>${n}日目 ${esc(d.date)}${d.state ? `<span class="state-tag">橋：${esc(d.state)}</span>` : ''}</h1><p class="muted">${esc(d.title)}</p>`;
   if (n >= 2) html += `<p class="note info">雨の日は計測せず、それ以降を1日ずつ延期する（予備日は 11/3）。延期したら、日付ではなく「何日目」で選ぶ。</p>`;
+  const lastToday = PAPER.filter((p) => p.last === n && !marks[paperKey(p)]);
+  const missed = PAPER.filter((p) => p.last < n && !marks[paperKey(p)]);
+  const names = (list) => list.slice(0, 3).map((p) => p.title).join('、') + (list.length > 3 ? `、ほか ${list.length - 3}` : '');
+  const dueToday = PAPER.filter((p) => p.due <= n && p.last > n && p.days.includes(n) && !marks[paperKey(p)]);
+  if (lastToday.length) html += `<a class="note alert" href="#/day/${n}/t/paper">論文用の写真：<b>今日が最後</b>の物が ${lastToday.length} か所（${esc(names(lastToday))}）。今日のうちに撮る。</a>`;
+  if (dueToday.length) html += `<a class="note info" href="#/day/${n}/t/paper">論文用の写真：今日撮る物（目安の日が今日まで）が ${dueToday.length} か所。</a>`;
+  if (missed.length) html += `<a class="note" href="#/paper">論文用の写真：撮れる日を過ぎて、まだ撮っていない物が ${missed.length} か所（${esc(names(missed))}）。</a>`;
   for (const part of parts) {
     const ts = list.filter((t) => t.part === part);
     if (!ts.length) continue;
@@ -95,7 +114,7 @@ function renderDay(n) {
       const pr = progress(n, t);
       const count = t.repeat ? 'そのつど' : `${pr.done} / ${pr.all} 枚`;
       const done = pr && pr.done === pr.all;
-      html += `<a class="card" href="#/day/${n}/t/${t.id}"><div class="card-head"><span class="card-title">${esc(t.title)}</span><span class="card-count">${done ? '<span class="done-tag">済</span> ' : ''}${count}</span></div>`
+      html += `<a class="card${t.paper ? ' paper' : ''}" href="#/day/${n}/t/${t.id}"><div class="card-head"><span class="card-title">${esc(t.title)}</span><span class="card-count">${done ? '<span class="done-tag">済</span> ' : ''}${count}</span></div>`
         + `<div class="card-desc">${esc(t.role ? '担当：' + t.role : '')}${t.onlyIfAttached ? '（付けた日だけ）' : ''}</div>`
         + (pr ? `<div class="bar"><i style="width:${(100 * pr.done / pr.all).toFixed(0)}%"></i></div>` : '') + '</a>';
     }
@@ -112,16 +131,19 @@ function renderTask(n, id) {
   setTab('steps');
   const t = tasks(n).find((x) => x.id === id);
   if (!t) return renderDay(n);
-  const first = t.shots.findIndex((s) => !marks[markKey(n, t.id, s.id)]);
+  const first = t.shots.findIndex((s) => !marks[keyOf(n, t, s)]);
   let html = `<a class="back" href="#/day/${n}">← ${n}日目の一覧</a><h1>${esc(t.title)}</h1>`;
   html += `<p>${esc(t.desc)}</p><p class="small muted">${esc(t.ref)}${t.role ? '　担当：' + esc(t.role) : ''}</p>`;
   if (t.repeat) html += '<p class="note info">この作業の写真は、起きたときにそのつど撮る見本です（「撮った」の印は付けない）。</p>';
+  if (t.paper) html += `<div class="note info"><b>撮り方の決まり</b><ul class="rules">${PAPER_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul><a href="#/paper">論文用の写真の全部と、撮れる日の一覧</a></div>`;
   const devs = [t.device, t.device2].filter(Boolean);
   if (devs.length) html += `<p>${devs.map((k) => `<button class="btn" data-dev="${k}">機器を見る：${esc(DEVICES[k].name)}</button>`).join(' ')}</p>`;
   if (!t.repeat) html += `<p><a class="btn primary" href="#/day/${n}/t/${t.id}/s/${(first < 0 ? 0 : first) + 1}">${first < 0 ? 'はじめから見直す' : first === 0 ? '1枚目から撮る' : `${first + 1}枚目から続ける`}</a></p>`;
   html += '<ol class="shots">' + t.shots.map((s, i) => {
-    const at = marks[markKey(n, t.id, s.id)];
-    return `<li><a class="${at ? 'done' : ''}" href="#/day/${n}/t/${t.id}/s/${i + 1}"><span class="num">${i + 1}</span><span class="t">${esc(s.title)}${at ? `<span class="when">撮った ${hhmmss(new Date(at))}</span>` : ''}</span></a></li>`;
+    const at = marks[keyOf(n, t, s)];
+    const tag = !t.paper || at ? '' : s.last === n ? '<span class="when alert">今日が最後</span>'
+      : s.due <= n ? `<span class="when alert">今日撮る（最後は ${s.last}日目）</span>` : `<span class="when muted">${s.due}日目に撮る（最後は ${s.last}日目）</span>`;
+    return `<li><a class="${at ? 'done' : ''}" href="#/day/${n}/t/${t.id}/s/${i + 1}"><span class="num">${i + 1}</span><span class="t">${esc(s.title)}${at ? `<span class="when">撮った ${t.paper ? mmdd_hhmm(new Date(at)) : hhmmss(new Date(at))}</span>` : tag}</span></a></li>`;
   }).join('') + '</ol>';
   $main.innerHTML = html;
   $main.querySelectorAll('[data-dev]').forEach((b) => b.addEventListener('click', () => openDevice(b.dataset.dev)));
@@ -134,18 +156,25 @@ async function renderShot(n, id, idx) {
   if (!t) return renderDay(n);
   const i = Math.min(Math.max(idx - 1, 0), t.shots.length - 1);
   const s = t.shots[i];
-  const k = markKey(n, t.id, s.id);
+  const k = keyOf(n, t, s);
   const at = marks[k];
   const prev = i > 0 ? `#/day/${n}/t/${t.id}/s/${i}` : `#/day/${n}/t/${t.id}`;
   const next = i < t.shots.length - 1 ? `#/day/${n}/t/${t.id}/s/${i + 2}` : `#/day/${n}/t/${t.id}`;
   let html = `<div class="shot-view"><div class="viewer-wrap" id="vw"></div><div class="info">`;
   html += `<a class="back" href="#/day/${n}/t/${t.id}">← ${esc(t.title)}</a>`;
   html += `<div class="shot-no">${n}日目・${i + 1} / ${t.shots.length} 枚目</div><h1>${esc(s.title)}</h1>`;
-  html += `<dl class="kv"><dt>撮る物</dt><dd>${esc(s.what)}</dd><dt>撮る所</dt><dd>${esc(s.where)}</dd><dt>向き</dt><dd>${esc(s.dir)}</dd></dl>`;
+  html += `<dl class="kv"><dt>撮る物</dt><dd>${esc(s.what)}</dd><dt>撮る所</dt><dd>${esc(s.where)}</dd><dt>向き</dt><dd>${esc(s.dir)}</dd>`
+    + (s.paper ? `<dt>使い道</dt><dd>${esc(s.use)}</dd><dt>撮る日</dt><dd>${s.due}日目に撮る（撮れるのは${esc(dayRange(s.days))}、最後は ${s.last}日目）</dd>` : '') + '</dl>';
+  if (s.paper) html += '<p class="small muted">論文用：同じ構図で3枚。写したくない物はフレームの外へ。人の顔とナンバーは写さない（「論文用」のページの決まり）。</p>';
   html += `<h3>写っていること</h3><ul class="must">${s.must.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`;
   if (s.note) html += `<p class="note">${esc(s.note)}</p>`;
+  const hints = (PAPER_HINTS[`${t.id}/${s.id}`] || []).map((id) => PAPER.find((p) => p.id === id)).filter((p) => p && p.days.includes(n) && !marks[paperKey(p)]);
+  if (hints.length) {
+    const pt = tasks(n).find((x) => x.paper);
+    html += `<div class="note alert"><b>論文用の写真も、ここで撮る</b>（この写真とは別に、同じ構図で3枚）：${hints.map((p) => `<a href="#/day/${n}/t/paper/s/${pt.shots.findIndex((x) => x.id === p.id) + 1}">${esc(p.title)}</a>`).join('、')}</div>`;
+  }
   if (s.view && s.view.legend) html += `<p class="small muted">図：${esc(s.view.legend)}</p>`;
-  if (!t.repeat) html += `<p class="marked-at" id="markedAt">${at ? '撮った：' + hhmmss(new Date(at)) : ''}</p>`;
+  if (!t.repeat) html += `<p class="marked-at" id="markedAt">${at ? '撮った：' + (t.paper ? mmdd_hhmm(new Date(at)) : hhmmss(new Date(at))) : ''}</p>`;
   html += `<p class="small muted">図の見方：桃色＝撮る所とカメラの向き、黄色＝撮る物。指で回せる。</p></div></div>`;
   html += `<div class="actionbar"><a class="btn" href="${prev}">← 前</a>`
     + (t.repeat ? `<a class="btn" href="#/day/${n}/t/${t.id}">一覧</a>` : `<button class="btn ${at ? '' : 'ok'}" id="markBtn" type="button">${at ? '撮った ✓（取り消す）' : '撮った'}</button>`)
@@ -156,7 +185,7 @@ async function renderShot(n, id, idx) {
   if (btn) {
     btn.addEventListener('click', () => {
       const on = !marks[k];
-      setMark(n, t.id, s.id, on);
+      setMark(k, on);
       if (on && i < t.shots.length - 1) { toast(`撮った：${hhmmss(new Date())}`); location.hash = next; }
       else if (on) { toast('この作業の写真は全部撮りました'); location.hash = `#/day/${n}/t/${t.id}`; }
       else renderShot(n, id, idx);
@@ -190,6 +219,30 @@ async function openDevice(key) {
   await v.showDevice(d.url, d.name);
 }
 
+// ---------- 論文用の写真の一覧 ----------
+function renderPaper() {
+  setTab('paper');
+  const n = load(KEY_DAY, todayDay() ?? 1);
+  const done = PAPER.filter((p) => marks[paperKey(p)]).length;
+  let html = '<h1>論文用の写真</h1>';
+  html += `<p>記録の写真とは別に、論文の図に使える写真を撮る。後で撮れない物（センサを付ける前の橋、状態ごとの横桁、1日目だけの試験）は、撮れる日を過ぎると撮れない。撮った：<b>${done} / ${PAPER.length}</b> か所（基準の日：${n}日目。「手順」で選んだ日）。</p>`;
+  html += `<h2>撮り方の決まり</h2><ol>${PAPER_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ol>`;
+  html += '<p class="small muted">根拠：論文の写真は、全体に均一な明るさ・コントラストの調整より強い加工ができず、写り込みを消す加工もできない。元の画像は残すよう求められる（論文誌の画像の規定）。人の写った画像を載せるには本人の同意が要る（論文誌の研究倫理の規定）。</p>';
+  const groups = [...new Set(PAPER.map((p) => p.group))];
+  for (const g of groups) {
+    html += `<h2>${esc(g)}</h2><ol class="shots">`;
+    for (const p of PAPER.filter((x) => x.group === g)) {
+      const [cls, label] = paperStatus(p, n);
+      const day = p.days.includes(n) ? n : p.days.find((d) => d >= n) ?? p.days[p.days.length - 1];
+      const idx = tasks(day).find((t) => t.paper).shots.findIndex((s) => s.id === p.id) + 1;
+      const at = marks[paperKey(p)];
+      html += `<li><a class="${cls === 'done' ? 'done' : ''}" href="#/day/${day}/t/paper/s/${idx}"><span class="num">${cls === 'done' ? '✓' : '・'}</span><span class="t">${esc(p.title)}<span class="when ${['last', 'missed', 'due'].includes(cls) ? 'alert' : cls === 'done' ? '' : 'muted'}">${esc(label)}${at ? ' ' + mmdd_hhmm(new Date(at)) : ''}（撮れるのは${esc(dayRange(p.days))}）</span></span></a></li>`;
+    }
+    html += '</ol>';
+  }
+  $main.innerHTML = html;
+}
+
 // ---------- 割り当て ----------
 function renderAssign() {
   setTab('assign');
@@ -220,7 +273,7 @@ function renderHelp() {
   setTab('help');
   const src = GEN.sources3d || [];
   let html = '<h1>使い方</h1>';
-  html += '<ol><li>上の「手順」で、その日（何日目）を選ぶ。</li><li>作業を選び、1枚目から順に撮る。3D の図の<b style="color:var(--cam)">桃色</b>が撮る所とカメラの向き、<b>黄色</b>が撮る物。「撮る位置から」を押すと、その位置から見た形になる。</li><li>撮ったら「撮った」を押す。次の写真に進む。</li></ol>';
+  html += '<ol><li>下の「手順」で、その日（何日目）を選ぶ。</li><li>作業を選び、1枚目から順に撮る。3D の図の<b style="color:var(--cam)">桃色</b>が撮る所とカメラの向き、<b>黄色</b>が撮る物。「撮る位置から」を押すと、その位置から見た形になる。</li><li>撮ったら「撮った」を押す。次の写真に進む。</li><li>論文用の写真は、記録の写真とは別に撮る。下の「論文用」に全部（撮る日の目安と、最後に撮れる日）がある。その日が最後の物は、日の画面の上に赤く出る。記録の写真の画面にも「論文用の写真も、ここで撮る」と出る。</li></ol>';
   html += '<h2>撮る前に</h2><ul><li><b>スマートフォンの時刻を「自動」にする。</b>写真は撮った時刻で、計測の記録と照らし合わせる。</li><li>写真は、撮った時刻が残る形で集める（AirDrop か、ケーブルで元のファイルのまま）。LINE などのアプリで送ると、撮った時刻の情報が消えることがあるので使わない。集める場所は未定。</li><li>前日までに、各台の上面（SPRESENSE は容器のふた）に、マスキングテープで名札を貼っておく。書くのは位置と台の名前（例「U12 BRI_P001」）と、x の向き（出口へ）の矢印。写真で台と向きを見分けるため。</li><li>人の顔はなるべく写さない。</li></ul>';
   html += '<h2>このアプリが残す物</h2><p>写真は受け取らず、保存しない。この端末に残すのは「撮った」の印と押した時刻だけ（ブラウザの中。ほかの人には見えない）。</p><p><button class="btn" id="resetMarks" type="button">この端末の「撮った」の印を全部消す</button></p>';
   html += '<h2>電波の弱い所で使う</h2><p>先に下を押すと、3D をこの端末に読み込んでおく（合わせて約 9 MB）。</p><p><button class="btn" id="prefetch" type="button">3D を全部読み込む</button> <span id="prefetchMsg" class="small muted"></span></p>';
@@ -254,6 +307,7 @@ function route() {
   const parts = h.split('/').filter(Boolean);
   window.scrollTo(0, 0);
   if (parts[0] === 'assign') return renderAssign();
+  if (parts[0] === 'paper') return renderPaper();
   if (parts[0] === 'help') return renderHelp();
   if (parts[0] === 'day') {
     const n = +parts[1];

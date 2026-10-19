@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d3557">
+<title>写真の指示 再試験2026</title>
+<meta name="description" content="鋼製模型橋の再試験（2026-10-28〜11-02）で、手順ごとに何をどこからどう撮るかを 3D で示すアプリ。写真は受け取らない。">
+<link rel="icon" href="app/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/">
+    <span class="brand-main">写真の指示</span>
+    <span class="brand-sub">鋼製模型橋の再試験 2026</span>
+  </a>
+  <div class="clock" id="clock" aria-label="いまの時刻">--:--:--</div>
+</header>
+<main id="main" tabindex="-1"><p class="loading">読み込んでいます…</p></main>
+<nav class="tabs" aria-label="画面の切り替え">
+  <a href="#/" data-tab="steps">手順</a>
+  <a href="#/assign" data-tab="assign">割り当て</a>
+  <a href="#/help" data-tab="help">使い方</a>
+</nav>
+<noscript><p class="noscript">このアプリは JavaScript を使います。ブラウザの設定で JavaScript を有効にしてください。</p></noscript>
+<script type="module" src="app/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+﻿date,point_id,position_code,device,device_id,sd_name,x_measured_m,y_measured_m,mounting_surface,flat_and_magnet_not_rocking_yes_no,axis_x,axis_y,axis_z,offset_from_plan_cm,photo_file,installed_time,installed_time_gnss_s,removed_time,notes
+20261028,FSL,P01,IMU (SPRESENSE),SPR_P001,SPR_P001,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合
+20261028,FSR,P02,IMU (SPRESENSE),SPR_P002,SPR_P002,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合
+20261028,RSL,P03,IMU (SPRESENSE),SPR_P003,SPR_P003,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合
+20261028,RSR,P04,IMU (SPRESENSE),SPR_P004,SPR_P004,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合
+20261028,FZL,P05,IMU (SPRESENSE),UNSPR_P001,UNSPR_P001,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合
+20261028,FZR,P06,IMU (SPRESENSE),UNSPR_P002,UNSPR_P002,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合
+20261028,RZL,P07,IMU (SPRESENSE),UNSPR_P003,UNSPR_P003,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合
+20261028,RZR,P08,IMU (SPRESENSE),UNSPR_P004,UNSPR_P004,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合
+20261028,VM1,P01,MOSAIC（車載、CLAS）,MOSAIC_P001,MOSAIC_P001,,,,,,,,,,,,,割り当て表（2026-10-19 確定）から作成。台を替えたら直す。写真は撮った時刻で照合

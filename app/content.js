@@ -620,7 +620,7 @@ function eveningTasks(day) {
 function collectTask(day) {
   return {
     id: 'collect', part: '夕方', title: 'データの回収', role: 'データ',
-    desc: `その日の設置の記録（sensor_install_record_${GEN.built.dates[day] ?? 'YYYYMMDD'}.csv。台を替えた日は直した物）を Raw_Data/<実験名>/SENSOR_SETUP/ に入れてから回収する。SPRESENSE（感圧・温度を含む）の SD は Collect_SD.command、小野橋梁センサの SD は 01_Collect_SD.command、MOSAIC は USB で回収する。SD からは何も消さない。翌朝、SD を同じ台に戻す。`,
+    desc: `その日の設置の記録（sensor_install_record_${GEN.built.dates[day] ?? 'YYYYMMDD'}.csv。台を替えた日は直した物）を Raw_Data/<実験名>/SENSOR_SETUP/ に入れてから回収する。SPRESENSE（感圧・温度を含む）の SD は Collect_SD.command、小野橋梁センサの SD は 01_Collect_SD.command、MOSAIC は USB で回収する${day === 6 ? '（屋上に残す BM1 も、データはこの日に回収する。本体は残す）' : ''}。SD からは何も消さない。翌朝、SD を同じ台に戻す。`,
     ref: '手順書 §13', shots: [
       {
         id: 'collect-spr', title: 'Collect_SD の最後の画面', what: 'SPRESENSE の SD をすべて写し終えた後の、データ保管用の Mac の画面', where: '画面の正面から', dir: '画面の文字が読めるように',
@@ -1225,7 +1225,7 @@ function removalTask() {
   });
   return {
     id: 'removal', part: '夕方', title: '撤去', role: '全員',
-    desc: '走行の後、橋のセンサ・四隅の MOSAIC（C1〜C4）・感圧・温度・加振器を外す。固定点 BM1 の MOSAIC は外さず、隣の建物の屋上に残す（11/4 の別の橋の計測で PPK の基準局に使い、その後に回収する）。外した台は同時打撃に使う。取り忘れがないかを主桁の線ごとに撮る。',
+    desc: '走行の後、橋のセンサ・四隅の MOSAIC（C1〜C4）・感圧・温度・加振器を外す。固定点 BM1 の MOSAIC は外さず、隣の建物の屋上に残す（11/4 の別の橋の計測で PPK の基準局に使い、その後に回収する。データはこの日に回収し、残すのは本体だけ）。外した台は同時打撃に使う。取り忘れがないかを主桁の線ごとに撮る。',
     ref: '手順書 §12', shots,
   };
 }

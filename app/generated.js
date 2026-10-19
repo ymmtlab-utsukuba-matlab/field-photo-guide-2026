@@ -144,7 +144,7 @@ export const GEN = {
   "truck": "models/truck_real.glb"
  },
  "built": {
-  "fieldDocsCommit": "c2931e9b557c",
+  "fieldDocsCommit": "3bc483c09f4b",
   "sensorPositionsSha256": "d27b32d9ae4bb6880e88bed53645cc05bc0003224f123f3db257e768b073e825",
   "dates": {
    "1": "20261028",

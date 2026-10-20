@@ -217,7 +217,7 @@ async function renderShot(n, id, idx) {
   }
   const wrap = document.getElementById('vw');
   if (s.view && s.view.svg) {
-    wrap.innerHTML = `<div class="viewer" style="display:flex;align-items:center;justify-content:center;background:#f4f6f8">${svgFigure(s.view.svg, s.view.svgText)}</div>`;
+    wrap.innerHTML = `<div class="viewer" style="display:flex;align-items:center;justify-content:center;background:#f1f1ee">${svgFigure(s.view.svg, s.view.svgText)}</div>`;
     return;
   }
   const v = await getViewer();

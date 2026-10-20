@@ -38,12 +38,12 @@ export const GEN = {
   },
   {
    "name": "加振器とおもり（クランプは付け方が決まるまで描かない）",
-   "from": "研究室の現場試験の資料（commit b132c64）",
+   "from": "研究室の現場試験の資料（commit b132c64fccd6）",
    "sha256": "77d9e29ec0e8fd056fca2b817e37a58caaeecfcc9c98df68dd8f572d5b172888"
   },
   {
    "name": "おもりの部品（分けて並べた形）",
-   "from": "研究室の現場試験の資料（commit b132c64）",
+   "from": "研究室の現場試験の資料（commit b132c64fccd6）",
    "sha256": "5757f3d21b96ba0e3ba4d72fe5da20e089cf50c06339d8347c8b952adfdd32a6"
   }
  ],
@@ -155,8 +155,8 @@ export const GEN = {
   "shaker": "models/shaker_on_G1.glb"
  },
  "built": {
-  "fieldDocsCommit": "f1ad5273986c",
-  "sensorPositionsSha256": "d27b32d9ae4bb6880e88bed53645cc05bc0003224f123f3db257e768b073e825",
+  "fieldDocsCommit": "4cead18226e2",
+  "sensorPositionsSha256": "da10b3dd86b58c7c2edb0faeb21883bb779862fc87cd2c65e28a8e724ea3c780",
   "dates": {
    "1": "20261028",
    "2": "20261029",
@@ -1032,6 +1032,7 @@ export const GEN = {
    "point": "E1",
    "device": "ONO_P001",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1080,6 +1081,7 @@ export const GEN = {
    "point": "E2",
    "device": "ONO_P005",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1140,6 +1142,7 @@ export const GEN = {
    "point": "E7",
    "device": "ONO_P011",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1164,6 +1167,7 @@ export const GEN = {
    "point": "E8",
    "device": "ONO_P013",
    "days": [
+    1,
     2,
     3,
     4,

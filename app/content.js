@@ -61,7 +61,7 @@ function bridgeInstallShots(id) {
     where: whereText(p), dir: '斜め上から見下ろす。縦長',
     must: [`名札（${id}・${u}）が読める`, '名札の矢印（x の向き）が出口を向いている（z は上、y は G4 の側）', `${placeText(p)}にある`,
       ...(isE ? ['支承の支間側の縁のすぐ内側（支承の真上）にある'] : [])],
-    note: isE ? '付けたらすぐ撮る（撮った時刻が、付けた時刻の記録になる。研究側の要件 R7）。その後は計測の終わりまで触れない。触れたら、そのセンサを撮る（R8）。'
+    note: isE ? '付けたらすぐ撮る（撮った時刻が、付けた時刻の記録になる）。その後は計測の終わりまで触れない。触れたら、そのセンサを撮る（傾きの基準が変わるため）。'
       : 'ボルトの頭などと当たるときは、x の向きに 5 cm までずらしてよい（ずらした位置は次の写真の巻尺で残る）。',
     view: { target: id, axes: id, cam: camTop(p), orient: 'tate', labels: [id] },
   }];
@@ -235,7 +235,7 @@ function shakerMorningShots(first) {
       id: 'S1-place', title: '加振器を印の上に置いた所',
       what: 'S1 の印の上に置いた加振器（PET-05）',
       where: '橋の外（G1 の側の地面）から', dir: '斜め上から。縦長',
-      must: ['底が上フランジにじかに載っている（間に何も挟まない）', '四角い板の辺が桁の向きにそろっている', '白・黄の端子の向き（毎日同じ向きにする）'],
+      must: ['底が上フランジにじかに載っている（間に何も挟まない）', '四角い板の辺が桁の向きにそろっている', '白・黄の端子が橋の外側を向いている（毎日同じ向き）'],
       view: { target: 'S1shaker', cam: { dir: [-0.3, -1, 0.7], dist: 0.9 }, orient: 'tate', shaker: true, shakerParts: ['mark', 'body'], targetLabel: 'S1' },
     },
     {
@@ -395,7 +395,7 @@ function vehicleInstallTask(day) {
     { id: 'mass-load', title: '載せる機材の質量', what: '試験車に載せる機材（まとめて）', where: '体重計か計量器の正面から', dir: '表示が読めるように', must: ['表示が読める', '載せる物が全部載っている'], view: { svg: 'scale', svgText: ['載せる機材'] } },
   );
   return {
-    id: 'vehicle', part: '朝', title: '車両のセンサの取り付け', role: '設置・センサ',
+    id: 'vehicle', part: day === 1 ? '日中' : '朝', title: '車両のセンサの取り付け', role: '設置・センサ',
     desc: `ばね上4台・ばね下4台と、車載の MOSAIC（VM1）。付けたとき・付け直したときに撮る（前の日から付けたままなら、この作業はない）。順番：前輪の中心の高さ → 左の前から後ろ → 右の後ろから前 → VM1 → 質量。`,
     ref: '手順書 §5・§7.1', device: 'spresense', shots, onlyIfAttached: true,
   };
@@ -448,7 +448,7 @@ function iceTask(first) {
 function shakerMorningTask(first) {
   return {
     id: 'shaker-am', part: '朝', title: first ? '加振器を置く（初めて）' : '加振器を置き直す', role: '加振・打撃',
-    desc: `${first ? 'S1（G1、入口の支承から 1.67 m）に印を付け、' : 'S1 の印の上に、'}加振器をじかに置き、L型クランプ4本で留め、水準器で確かめ、おもりを付ける。2人で運ぶ（本体は約 5 kg、PA05 は約 9 kg）。加振器の 3D は作成中で、図の箱は位置の目安。`,
+    desc: `${first ? 'S1（G1、入口の支承から 1.67 m）に印を付け、' : 'S1 の印の上に、'}加振器をじかに置き（白・黄の端子は橋の外側に向ける）、L型クランプ4本で留め、水準器で確かめ、おもりを付ける。2人で運ぶ（本体は約 5 kg、PA05 は約 9 kg）。`,
     ref: '手順書 §8、加振器とハンマーの使い方 §3・§4', device: 'mass', shots: shakerMorningShots(first),
   };
 }
@@ -492,6 +492,14 @@ function mosaicBridgeTask() {
   };
 }
 
+function bearingsTask() {
+  return {
+    id: 'bearings', part: '日中', title: '支承の4点のセンサ（静的載荷のため）', role: '設置',
+    desc: '静的載荷で支点の回転を傾きで測るため、支承の4点（E1・E2・E7・E8）に、割り当て表のとおりの小野橋梁センサを付ける（付け方は2日目の設置と同じ）。付けたらすぐ撮る。夕方に外す（2日目に全台を板に並べて同時打撃をするため）。',
+    ref: '手順書 §1.1・§4 の3・§14', shots: ['E1', 'E2', 'E7', 'E8'].flatMap(bridgeInstallShots),
+  };
+}
+
 function installTask() {
   const shots = BRIDGE_ORDER.flatMap(bridgeInstallShots);
   ['G1', 'G2', 'G3', 'G4'].forEach((g) => shots.push(routeShot(g)));
@@ -507,8 +515,8 @@ function stateMorningTask(day) {
   const must = st[0] === 'heavy' ? ['横桁が外されて、ない', 'まわりの部材とセンサがそのまま']
     : st[0] === 'light' ? ['横桁がある', '両端のボルトが緩めてある（合いマークがずれている）'] : ['横桁がある', '両端のボルトの合いマークがそろっている'];
   return {
-    id: 'state', part: '日中', title: `その日の状態（${st[1]}）を撮る`, role: '加振・打撃・設置',
-    desc: '走行に入る前に、損傷させる横桁の状態を撮る。撮った時刻が、その状態の記録になる。',
+    id: 'state', part: '朝', title: `その日の状態（${st[1]}）を撮る`, role: '加振・打撃・設置',
+    desc: '朝、加振器を置いた後に、損傷させる横桁の状態を撮る。撮った時刻が、その状態の記録になる。',
     ref: '手順書 §10', shots: [damageOverall('state-all', st[0], `横桁の全体（${st[1]}）`, must)],
   };
 }
@@ -574,32 +582,37 @@ function passageTask(day) {
   };
 }
 
+function shakerOffTask() {
+  return {
+    id: 'shaker-off', part: '夕方', title: '加振器を外す', role: '加振・打撃',
+    desc: '加振のアプリで「SSD に写す」をして終え、PA05・DHO914S・Mac の電源を切り、おもり（ワッシャーの束と 353B33）・クランプ4本・加振器の本体を外して屋内に置く。PA05・DHO914S・Mac は、もう1枚のブルーシートで覆う。',
+    ref: '手順書 §1.2・§8 の7', shots: [
+      {
+        id: 'S1-empty', title: '外した後の S1', what: '加振器を外した後の G1 の上フランジ', where: '橋の外（G1 の側の地面）から', dir: '斜め上から',
+        must: ['S1 の印が残っている', '本体・クランプ・おもりが橋に残っていない'],
+        view: { target: 'S1', cam: { dir: [-0.2, -1, 0.7], dist: 0.8 }, orient: 'yoko', labels: ['S1'], shaker: false },
+      },
+      {
+        id: 'tarp-cover', title: '機器の覆い', what: 'ブルーシートで覆った PA05・DHO914S・Mac', where: '少し離れた所から', dir: '全体が入るように',
+        must: ['機器が全部覆われている', 'ケーブルの中継が地面から浮いている'],
+        view: { target: TARP, ring: 0.4, targetLabel: 'ブルーシート（置き場所の目安）', cam: { dir: [-0.4, -1, 0.8], dist: 2.8 }, orient: 'yoko', shaker: false },
+      },
+    ],
+  };
+}
+
 function eveningTasks(day) {
   const list = [];
-  list.push({
-    id: 'press-temp-off', part: '夕方', title: '感圧センサと温度センサを外す', role: '設置', nophoto: true,
-    desc: '感圧の帯はゴムシートごと外し、直径 20 cm ほどの輪にゆるく丸めて（端子のある端は折らない）屋内に置く。温度センサは測定点の板を鋼からはがし、ロガーと一緒に屋内に置く。', ref: '手順書 §6 の4・§7.2 の7',
-  });
   if (day < 6) {
+    list.push(shakerOffTask());
+    if (day >= 3) list.push(noPhoto('vehicle-off', '夕方', '車両のセンサを外す', '走行の後、車両のセンサ（ばね上4・ばね下4・車載の MOSAIC）を外す。', '手順書 §1.2', '運転・センサ'));
     list.push({
-      id: 'shaker-off', part: '夕方', title: '加振器を外す', role: '加振・打撃',
-      desc: 'PA05・DHO914S・Mac の電源を切り、おもり（ワッシャーの束と 353B33）・クランプ4本・加振器の本体を外して屋内に置く。PA05・DHO914S・Mac は、もう1枚のブルーシートで覆う。',
-      ref: '手順書 §8 の7', shots: [
-        {
-          id: 'S1-empty', title: '外した後の S1', what: '加振器を外した後の G1 の上フランジ', where: '橋の外（G1 の側の地面）から', dir: '斜め上から',
-          must: ['S1 の印が残っている', '本体・クランプ・おもりが橋に残っていない'],
-          view: { target: 'S1', cam: { dir: [-0.2, -1, 0.7], dist: 0.8 }, orient: 'yoko', labels: ['S1'], shaker: false },
-        },
-        {
-          id: 'tarp-cover', title: '機器の覆い', what: 'ブルーシートで覆った PA05・DHO914S・Mac', where: '少し離れた所から', dir: '全体が入るように',
-          must: ['機器が全部覆われている', 'ケーブルの中継が地面から浮いている'],
-          view: { target: TARP, ring: 0.4, targetLabel: 'ブルーシート（置き場所の目安）', cam: { dir: [-0.4, -1, 0.8], dist: 2.8 }, orient: 'yoko', shaker: false },
-        },
-      ],
+      id: 'press-temp-off', part: '夕方', title: '感圧センサと温度センサを外す', role: '設置', nophoto: true,
+      desc: '記録を止めて SD カードを抜く。感圧の帯はゴムシートごと外し、直径 20 cm ほどの輪にゆるく丸めて（端子のある端は折らない）屋内に置く。温度センサは測定点の板を鋼からはがし、ロガーと一緒に屋内に置く。', ref: '手順書 §6 の4・§7.2 の7',
     });
     list.push({
       id: 'night-cover', part: '夕方', title: 'モバイルバッテリーを外し、ブルーシートをかぶせる', role: '設置・データ',
-      desc: '記録を止め、モバイルバッテリーだけ外して回収し、充電する（センサは橋に残す）。加速度計24台に1枚ずつブルーシートをかぶせる。夜は記録しない。',
+      desc: '橋の24台の記録を止めて SD カードを抜き、モバイルバッテリーを外して回収し、充電する（センサは橋に残す）。加速度計24台に1枚ずつブルーシートをかぶせる。夜は記録しない。',
       ref: '手順書 §1.2', shots: [
         {
           id: 'cover-in', title: 'かぶせた全体（入口の側から）', what: 'ブルーシートをかぶせた橋の全体', where: '入口の斜め前の地面から', dir: '橋の全体。横長',
@@ -613,6 +626,9 @@ function eveningTasks(day) {
         },
       ],
     });
+    list.push(noPhoto('mosaic-off', '夕方', 'MOSAIC の記録を止める', '四隅の4台（C1〜C4）と BM1 の記録を止め、データを USB メモリに写して回収し、モバイルバッテリーを外す。USB メモリは「データの回収」で写す。', '手順書 §1.2・§7.1', 'センサ'));
+  } else {
+    list.push(noPhoto('vehicle-off', '夕方', '車両のセンサを外す', '走行の後、車両のセンサ（ばね上4・ばね下4・車載の MOSAIC）を外す。', '手順書 §1.2', '運転・センサ'));
   }
   list.push(collectTask(day));
   return list;
@@ -621,17 +637,12 @@ function eveningTasks(day) {
 function collectTask(day) {
   return {
     id: 'collect', part: '夕方', title: 'データの回収', role: 'データ',
-    desc: `その日の設置の記録（sensor_install_record_${GEN.built.dates[day] ?? 'YYYYMMDD'}.csv。台を替えた日は直した物）を Raw_Data/<実験名>/SENSOR_SETUP/ に入れてから回収する。SPRESENSE（感圧・温度を含む）の SD は Collect_SD.command、小野橋梁センサの SD は 01_Collect_SD.command、MOSAIC は USB で回収する${day === 6 ? '（屋上に残す BM1 も、データはこの日に回収する。本体は残す）' : ''}。SD からは何も消さない。翌朝、SD を同じ台に戻す。`,
+    desc: `その日の設置の記録（sensor_install_record_${GEN.built.dates[day] ?? 'YYYYMMDD'}.csv。台を替えた日は直した物）を Raw_Data/<実験名>/SENSOR_SETUP/ に入れてから回収する。SPRESENSE（感圧・温度・ばね下を含む）と小野橋梁センサの SD、MOSAIC の USB メモリ${day === 6 ? '（屋上に残す BM1 の分を含む）' : ''}を、データ保管用の Mac で Collect_SD.command を使って写す。SD からは何も消さない。写した後、Daily_Check.command でその日の1ページを開いて確かめる。${day === 6 ? '' : '翌朝、SD を同じ台に戻す。'}`,
     ref: '手順書 §13', shots: [
       {
-        id: 'collect-spr', title: 'Collect_SD の最後の画面', what: 'SPRESENSE の SD をすべて写し終えた後の、データ保管用の Mac の画面', where: '画面の正面から', dir: '画面の文字が読めるように',
-        must: ['「まだ回収していない台」の表示（全台を写し終えた後）'],
+        id: 'collect-spr', title: 'Collect_SD の最後の画面', what: 'SD（SPRESENSE・感圧・温度・小野橋梁センサ）と MOSAIC の USB メモリを全部写し終えた後の、データ保管用の Mac の画面', where: '画面の正面から', dir: '画面の文字が読めるように',
+        must: ['「まだ回収していない台」の表示（全部を写し終えた後）'],
         view: { svg: 'laptop', svgText: ['Collect_SD.command', '最後に、まだ回収していない台が出る'] },
-      },
-      {
-        id: 'collect-ono', title: '小野の回収の最後の画面', what: '小野橋梁センサの SD をすべて写し終えた後の画面', where: '画面の正面から', dir: '画面の文字が読めるように',
-        must: ['写した台の一覧と SHA-256 の確かめの結果'],
-        view: { svg: 'laptop', svgText: ['01_Collect_SD.command', '小野橋梁センサ'] },
       },
     ],
   };
@@ -786,7 +797,7 @@ function hammerMarkTask() {
       view: { target: id, labels: [id], cam: { dir: [-0.2, out * 1, lateral ? 0.2 : 0.7], dist: 0.8 }, orient: 'yoko', tapes: [{ from: [0, p.y, (p.girder === 'G1' ? 0 : DECK) + 0.003], to: [p.x, p.y, (p.girder === 'G1' ? 0 : DECK) + 0.003], label1: m3(p.x) }] },
     };
   });
-  return { id: 'hammer-marks', part: '日中', title: '打撃の点の印（H1〜H8）', role: '加振・打撃', desc: 'G1・G4 の8点に、チョークかマスキングテープで印を付け、番号を書く。位置の正本は設置表。', ref: '手順書 §14・§9', shots };
+  return { id: 'hammer-marks', part: '日中', title: '打撃の点（H1〜H8）とセンサの位置の印', role: '加振・打撃', desc: 'G1・G4 の打撃の8点に、チョークかマスキングテープで印を付け、番号を書く。橋のセンサ 24台の位置にも、巻尺で印を付ける（2日目は、この印の所に付ける）。位置の正本は設置表。', ref: '手順書 §1.1・§14・§9・§4 の1', shots };
 }
 
 function deckBoltTask() {
@@ -865,7 +876,7 @@ function staticLoadTask() {
   });
   return {
     id: 'static', part: '日中', title: '静的載荷', role: '全員',
-    desc: '止める位置は例（支間の1/4・1/2・3/4）で、未定（計画の担当が決める）。位置ごとに「無載荷 → 車を止める → 無載荷」を、各1分以上。小野橋梁センサの温度が落ち着いてから始める。直前と直後の無載荷の差が載荷の 10% を超えたら、その位置をやり直す（研究側の要件 R9）。',
+    desc: '止める位置は例（支間の1/4・1/2・3/4）で、未定（計画の担当が決める）。位置ごとに「無載荷 → 車を止める → 無載荷」を、各1分以上。小野橋梁センサの温度が落ち着いてから始める。直前と直後の無載荷の差が載荷の 10% を超えたら、その位置をやり直す。',
     ref: '手順書 §14', shots,
   };
 }
@@ -985,21 +996,21 @@ export const PAPER = [
     what: '隣の建物の屋上の BM1 の MOSAIC と、周りの空', where: '屋上の、BM1 から少し離れた所から', dir: '空と周りの建物・木が入るように。横長', must: ['MOSAIC とアンテナ', '周りに空をさえぎる物がない様子'],
     view: pv({ target: [4.16, 0.6, 0], ring: 0.01, over: { at: [4.16, -9, 6], look: [4.16, 0.6, 0] }, msg: 'BM1 は隣の建物の屋上（橋から 20 m 以内。図に建物はない）' }) }),
   // 加振と打撃
-  P_({ id: 'rep-shaker', order: 50, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振器（S1、クランプとおもり）', use: 'データセットの論文の方法（加振の試験、図1）',
+  P_({ id: 'rep-shaker', order: 50, days: [1, 2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振器（S1、クランプとおもり）', use: 'データセットの論文の方法（加振の試験、図1）',
     what: 'G1 に留めた加振器（PET-05）・L型クランプ4本・おもり・加速度計 353B33', where: '橋の外（G1 の側）から', dir: '斜め上から。横長', must: ['加振器・クランプ4本・おもり・353B33 の全部', '物差し（大きさの基準）'], note: 'おもりを付けた後、走行の前に外す前に撮る。',
     view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [-0.35, -1, 0.6], dist: 0.75 } }) }),
-  P_({ id: 'rep-mass-parts', order: 49, days: [0, 2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'おもりの部品（組み立ての前、並べて）', use: 'データセットの論文の方法（加振の力：動く部分の質量）',
+  P_({ id: 'rep-mass-parts', order: 49, days: [0, 1, 2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'おもりの部品（組み立ての前、並べて）', use: 'データセットの論文の方法（加振の力：動く部分の質量）',
     what: '寸切りボルト・ナット3個・大ワッシャー33枚・加速度計 353B33 を並べた所', where: '真上から（白い紙か板の上に並べる）', dir: '真上から。横長',
     must: ['部品の全部', '物差し（大きさの基準）', '背景に余計な物がない'], note: '組み立てる前に撮る（前日までの研究室で、部品を量るときが最適）。',
     view: { svg: 'scale', svgText: ['寸切りボルト', 'ナット 3', '大ワッシャー 33', '353B33'] } }),
-  P_({ id: 'rep-clamp', order: 50.5, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'クランプの掴み方（1本の近く）', use: 'データセットの論文の方法（加振器の留め方）',
+  P_({ id: 'rep-clamp', order: 50.5, days: [1, 2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: 'クランプの掴み方（1本の近く）', use: 'データセットの論文の方法（加振器の留め方）',
     what: 'L型クランプ1本の上の爪が四角い板の角に載り、下のねじがフランジを押し上げる所', where: '橋の外（G1 の側）から、低く', dir: '真横から。横長',
     must: ['上の爪と四角い板の角', '下のねじとフランジの下面', '物差し（大きさの基準）'],
     view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [0.2, -1, 0.05], dist: 0.55 } }) }),
-  P_({ id: 'rep-shaker-wide', order: 51, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振器と橋（引いて）', use: 'データセットの論文の方法（加振の位置）',
+  P_({ id: 'rep-shaker-wide', order: 51, days: [1, 2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振器と橋（引いて）', use: 'データセットの論文の方法（加振の位置）',
     what: '加振器と、橋の入口の側の全体', where: '橋の外（G1 の側）から、離れて', dir: '横長', must: ['加振器と、橋の中での位置が分かる'],
     view: pv({ target: 'S1shaker', shaker: true, targetLabel: 'S1', cam: { dir: [-0.5, -1, 0.45], dist: 2.6 } }) }),
-  P_({ id: 'rep-daq', order: 52, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振と打撃の記録の機器', use: 'データセットの論文の方法（加振の力の記録）',
+  P_({ id: 'rep-daq', order: 52, days: [1, 2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '加振と打撃の記録の機器', use: 'データセットの論文の方法（加振の力の記録）',
     what: '電力増幅器 PA05・オシロスコープ DHO914S・Mac・信号調整器 480E09 と、つないだケーブル', where: 'ブルーシートの外から', dir: '横長', must: ['4つの機器とケーブルのつながり', '機器の名前が読める'],
     view: pv({ target: TARP, ring: 0.4, targetLabel: 'ブルーシート（置き場所の目安）', shaker: true, cam: { dir: [-0.5, -1, 0.9], dist: 2.4 } }) }),
   P_({ id: 'rep-hammer', order: 53, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '打撃の様子（H2）', use: 'データセットの論文の方法（打撃の試験）',
@@ -1138,17 +1149,24 @@ function tasksForDay(day) {
   const T = [];
   if (day === 0) {
     T.push(noPhoto('prep', '準備', '前日までの準備', '全台の動作・SD・充電、試験A・B の準備、割り当て表、名札、アプリの確認など。', '手順書 §0', '全員'));
-    T.push(prepMassTask(), paperTask(0));
+    T.push(prepMassTask());
+    T.push(noPhoto('testA', '準備', '試験A を始める（10/27 の夕方）', '40台を剛体ブロックに並べて、18:00 に試験A を始め、22:00 に小野橋梁センサのモバイルバッテリーを替える（時刻は案）。手順の正本はセンサの性能評価の手順書（このアプリには写さない）。', '手順書 §1.1', 'センサ・データ'));
+    T.push(paperTask(0));
     return T;
   }
   if (day === 1) {
     T.push(noPhoto('testAB', '朝', '試験A の終了・試験B', 'センサの試験A（前の晩から）を終え、試験B を行う。手順はセンサの性能評価の手順書（このアプリには写さない）。', '手順書 §1.1', 'センサ・データ'));
-    T.push(cleaningTask(false), cleaningTask(true));
-    T.push(dimensionsTask(), jointStepTask(), hammerMarkTask(), deckBoltTask());
-    T.push(vehicleInstallTask(1), vehicleAloneTask(), staticLoadTask());
-    T.push(noPhoto('rehearsal', '日中', '全機器の通し確認と予行の走行', '全機器を現地で動かし、数回走らせ、前処理を最後まで通す。モバイルバッテリーの持ちと GNSS の受信も確かめる。', '手順書 §14', '全員'));
-    T.push(paperTask(1), swapTask(), collectTask(1));
-    T.push(noPhoto('charge', '夕方', 'モバイルバッテリーを充電する', '試験A と予行で使ったモバイルバッテリーを、10/29 の設置までに充電する。', '計画書 §9 の13', 'センサ'));
+    T.push(cleaningTask(false), shakerMorningTask(true), cleaningTask(true));
+    T.push(dimensionsTask(), jointStepTask(), hammerMarkTask());
+    T.push(noPhoto('guide-line', '日中', '走行の案内線と床版の目盛り', '走行の案内線を引き、床版の目盛りを入口と出口に貼る。', '手順書 §1.1・§10 の2・5', '加振・打撃'));
+    T.push(deckBoltTask());
+    T.push(noPhoto('shake-trial', '日中', '加振器の試運転', '加振器の試運転（約15分）と確かめの運転（約10分）。アプリが振動数ごとの強さを決める。その間は橋の上と下に人を入れない。', '手順書 §1.1・§9 の2、加振器とハンマーの使い方 §6', '加振・打撃'));
+    T.push(vehicleInstallTask(1), bearingsTask(), vehicleAloneTask(), staticLoadTask());
+    T.push(noPhoto('rehearsal', '日中', '全機器の通し確認と予行の走行', '全機器を現地で動かし、予行の走行を3回する。1回の走行にかかる時間を測る。前処理を最後まで通す。モバイルバッテリーの持ちと GNSS の受信も確かめる。', '手順書 §14', '全員'));
+    T.push(paperTask(1), swapTask());
+    T.push(noPhoto('rehearsal-off', '夕方', '予行で付けたセンサを外す', '支承の4点（E1・E2・E7・E8）の小野橋梁センサと、車両のセンサを外す（2日目に、全台を板に並べて同時打撃をするため）。', '手順書 §1.1', '設置・センサ'));
+    T.push(shakerOffTask(), collectTask(1));
+    T.push(noPhoto('charge', '夕方', 'モバイルバッテリーの充電と保冷剤', '試験A と予行で使ったモバイルバッテリーを、10/29 の設置までに充電する。保冷剤を冷凍庫で凍らせる（2日目の朝に 28個を使う）。', '手順書 §1.1・計画書 §9 の13', 'センサ・設置'));
     return T;
   }
   const first = day === 2;
@@ -1157,12 +1175,13 @@ function tasksForDay(day) {
     T.push(syncTask(day, false));
     T.push(installTask());
   } else {
-    T.push(noPhoto('battery', '朝', 'モバイルバッテリーをつなぐ', '橋の24台にモバイルバッテリーをつなぐ。小野橋梁センサは、つなぐ前に SW1・SW2 が off（±2 g）か見る。つないだら、ランプが点きっぱなし（記録中）になるのを確かめる。点滅は GPS の時刻待ち。', '手順書 §4 の5', '設置・センサ'));
+    T.push(noPhoto('battery', '朝', 'モバイルバッテリーをつなぐ', 'ブルーシートを外し、橋の24台に SD カードを戻してモバイルバッテリーをつなぐ。小野橋梁センサは、つなぐ前に SW1・SW2 が off（±2 g）か見る。つないだら、ランプが点きっぱなし（記録中）になるのを確かめる。点滅は GPS の時刻待ち。', '手順書 §1.2・§4 の5', '設置・センサ'));
+    T.push(noPhoto('mosaic-on', '朝', 'MOSAIC の記録を始める', '支承の四隅の4台（C1〜C4）と、隣の建物の屋上の BM1 にモバイルバッテリーをつなぎ、記録を始める。', '手順書 §1.2・§7.1', 'センサ'));
   }
   T.push(iceTask(first));
   T.push(pressTask(first), tempTask(first));
   if (first) T.push(mosaicBridgeTask());
-  T.push(shakerMorningTask(first));
+  T.push(shakerMorningTask(false));   // 初めて置くのは1日目（試運転のため。手順書 §1.1）
   if (first) {
     T.push({
       id: 'bolts-intact', part: '朝', title: '横桁のボルトの合いマーク（健全）', role: '加振・打撃・設置',
@@ -1170,11 +1189,11 @@ function tasksForDay(day) {
       ref: '手順書 §11', shots: [damageOverall('bolts-all', 'intact', '横桁の全体（健全）', ['横桁の全体', '両端のボルト']), ...damageShots('intact', 'intact', '健全', ['合いマークの線が、ボルト・ナット・板にまたがっている'])],
     });
   }
-  if (day >= 3) T.push(vehicleInstallTask(day));
+  if (day >= 3) T.push(stateMorningTask(day), vehicleInstallTask(day));
   T.push(noPhoto('shake', '日中', day === 2 ? '加振の試験（1日中）' : '加振の試験（午前）', `Mac のアプリで、3〜70 Hz の掃引を決めた間隔（例：30分ごと）で自動でくり返す。加振の間は橋の上と下に人を入れない。決めた時刻ごとに、全台が記録中か（小野橋梁センサのランプ、熱で止まっていないか）を見る。開始と終了の時刻・強さ・ファイル名はアプリが記録する。`, '手順書 §9', '加振・打撃'));
   T.push(ambientTask(day));
   if (day >= 3) {
-    T.push(massOffTask(), stateMorningTask(day), passageTask(day));
+    T.push(massOffTask(), passageTask(day));
   }
   T.push(swapTask());
   if (day === 3) T.push(changeTask('light'));
@@ -1226,7 +1245,7 @@ function removalTask() {
   });
   return {
     id: 'removal', part: '夕方', title: '撤去', role: '全員',
-    desc: '走行の後、橋のセンサ・四隅の MOSAIC（C1〜C4）・感圧・温度・加振器を外す。固定点 BM1 の MOSAIC は外さず、隣の建物の屋上に残す（11/4 の別の橋の計測で PPK の基準局に使い、その後に回収する。データはこの日に回収し、残すのは本体だけ）。外した台は同時打撃に使う。取り忘れがないかを主桁の線ごとに撮る。',
+    desc: '走行の後、加振器と、橋のセンサ・四隅の MOSAIC（C1〜C4）・感圧・温度を外す。四隅の MOSAIC は記録を止めてデータを USB メモリに写してから外す。橋のセンサ・感圧・温度は、同時打撃まで記録を止めない（外した台は同時打撃に使う）。固定点 BM1 は、記録を止めてデータを USB メモリに写し、本体は隣の建物の屋上に残す（11/4 の別の橋の計測で PPK の基準局に使い、その後に回収する）。取り忘れがないかを主桁の線ごとに撮る。',
     ref: '手順書 §12', shots,
   };
 }

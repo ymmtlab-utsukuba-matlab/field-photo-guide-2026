@@ -888,6 +888,7 @@ export const GEN = {
    "point": "U12",
    "device": "BRI_P001",
    "days": [
+    1,
     2,
     3,
     4,
@@ -900,6 +901,7 @@ export const GEN = {
    "point": "U14",
    "device": "BRI_P002",
    "days": [
+    1,
     2,
     3,
     4,
@@ -912,6 +914,7 @@ export const GEN = {
    "point": "U21",
    "device": "BRI_P003",
    "days": [
+    1,
     2,
     3,
     4,
@@ -924,6 +927,7 @@ export const GEN = {
    "point": "U23",
    "device": "BRI_P004",
    "days": [
+    1,
     2,
     3,
     4,
@@ -936,6 +940,7 @@ export const GEN = {
    "point": "U25",
    "device": "BRI_P005",
    "days": [
+    1,
     2,
     3,
     4,
@@ -948,6 +953,7 @@ export const GEN = {
    "point": "U31",
    "device": "BRI_P006",
    "days": [
+    1,
     2,
     3,
     4,
@@ -960,6 +966,7 @@ export const GEN = {
    "point": "U33",
    "device": "BRI_P007",
    "days": [
+    1,
     2,
     3,
     4,
@@ -972,6 +979,7 @@ export const GEN = {
    "point": "U35",
    "device": "BRI_P008",
    "days": [
+    1,
     2,
     3,
     4,
@@ -984,6 +992,7 @@ export const GEN = {
    "point": "U42",
    "device": "BRI_P009",
    "days": [
+    1,
     2,
     3,
     4,
@@ -996,6 +1005,7 @@ export const GEN = {
    "point": "U43",
    "device": "BRI_P010",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1008,6 +1018,7 @@ export const GEN = {
    "point": "U44",
    "device": "BRI_P011",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1020,6 +1031,7 @@ export const GEN = {
    "point": "U45",
    "device": "BRI_P012",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1045,6 +1057,7 @@ export const GEN = {
    "point": "U11",
    "device": "ONO_P002",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1057,6 +1070,7 @@ export const GEN = {
    "point": "U13",
    "device": "ONO_P003",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1069,6 +1083,7 @@ export const GEN = {
    "point": "U15",
    "device": "ONO_P004",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1094,6 +1109,7 @@ export const GEN = {
    "point": "U22",
    "device": "ONO_P006",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1106,6 +1122,7 @@ export const GEN = {
    "point": "U24",
    "device": "ONO_P007",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1118,6 +1135,7 @@ export const GEN = {
    "point": "U32",
    "device": "ONO_P008",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1130,6 +1148,7 @@ export const GEN = {
    "point": "U34",
    "device": "ONO_P010",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1155,6 +1174,7 @@ export const GEN = {
    "point": "U41",
    "device": "ONO_P012",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1180,6 +1200,7 @@ export const GEN = {
    "point": "PRESS_P001",
    "device": "PRESS_P001",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1192,6 +1213,7 @@ export const GEN = {
    "point": "PRESS_P002",
    "device": "PRESS_P002",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1204,6 +1226,7 @@ export const GEN = {
    "point": "T1",
    "device": "TEMP_P001",
    "days": [
+    1,
     2,
     3,
     4,
@@ -1216,6 +1239,7 @@ export const GEN = {
    "point": "T2",
    "device": "TEMP_P002",
    "days": [
+    1,
     2,
     3,
     4,

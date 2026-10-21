@@ -1,6 +1,6 @@
 // 電波の弱い現場でも開けるように、読み込んだ物をこの端末に残す。写真・記録は扱わない。
 // VERSION は tools/build_site.py が、公開する中身から作る。
-const VERSION = '0f5838abf40c';
+const VERSION = 'a74d4b8e55f5';
 const CACHE = 'fpg2026-' + VERSION;
 const SHELL = ['./', 'index.html', 'app/style.css', 'app/app.js', 'app/viewer.js', 'app/content.js', 'app/generated.js', 'app/icon.svg', 'models/bridge_retest.glb'];
 

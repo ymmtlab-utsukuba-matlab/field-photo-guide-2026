@@ -1,4 +1,4 @@
-// 手順と写真の指示。元は鋼製模型橋梁実験の手順書・計画書・加振器の使い方・設置表（研究室の現場試験の資料、commit 3ae53b6）。
+// 手順と写真の指示。元は鋼製模型橋梁実験の手順書・計画書・加振器の使い方・設置表（研究室の現場試験の資料、commit 6434eb1）。
 // 橋の座標は設置表と同じ（x：入口の支承の中心の線から出口へ、y：中心線から G4 の側へ、z：上フランジの上面から上。m）。
 // 撮る位置 cam.dir は [橋の向き, G4 の側, 上] の向きで、ねらう所からの距離 dist（m）。
 import { GEN } from './generated.js';
@@ -14,13 +14,13 @@ const RIGHT_Y = +(BR.pathY - BR.track / 2).toFixed(2);   // 右の車輪の通�
 const m3 = (x) => `${x.toFixed(3)} m`;
 
 export const DAYS = [
-  { n: 0, date: '〜10/27', state: '', title: '前日までの準備（研究室）', label: '前日まで' },
+  { n: 0, date: '〜10/27', state: '', title: '前日までの準備（研究室）。10/27 は加振器の試しと備品の確かめだけ', label: '前日まで' },
   { n: 1, date: '10/28（水）', state: '', title: '試験B・橋の掃除・寸法・橋のセンサの取り付け・静的載荷・予行' },
   { n: 2, date: '10/29（木）', state: '健全', title: '感圧・温度・MOSAIC を置く。加振を1日中くり返す' },
-  { n: 3, date: '10/30（金）', state: '健全', title: '午前に加振、午後に走行。夕方に軽度へ' },
-  { n: 4, date: '10/31（土）', state: '軽度', title: '午前に加振、午後に走行。夕方に重度へ' },
+  { n: 3, date: '10/30（金）', state: '健全', title: '午前に加振、午後に走行。夕方に軽度へ。午後は作業A・作業C が来ないので、その分を作業D と責任者が行う' },
+  { n: 4, date: '10/31（土）', state: '軽度', title: '午前に加振、午後に走行。夕方に重度へ。作業A・作業C が来ないので、その分を作業D と責任者が行う' },
   { n: 5, date: '11/1（日）', state: '重度', title: '午前に加振、午後に走行。夕方に健全へ' },
-  { n: 6, date: '11/2（月）', state: '健全', title: '午前に加振、午後に走行。撤収' },
+  { n: 6, date: '11/2（月）', state: '健全', title: '午前に加振、午後に走行。時刻差の試験と撤収。作業C は来ない（15:00 から作業D）' },
 ];
 
 export const DEVICES = {
@@ -128,7 +128,7 @@ function pressShots(id, first) {
       id: `${id}-a`, title: `${name}の帯（置いた所）`,
       what: `${name}の支承線の上に置いた感圧の帯（${id}）`,
       where: `${entry ? '入口の手前' : '出口の先'}の路面に立ち、帯の正面から`, dir: '斜め上から。横長',
-      must: [`帯が${name}の支承線の上に、横向き（左の車輪の通り道が中心）にある`, 'ゴムシートをかぶせてある', first ? '路面に付けた印（置く位置）' : '前の日の印の位置に置いた'],
+      must: [`帯が${name}の支承線の上に、横向き（左の車輪の通り道が中心）にある`, 'ゴムシートをかぶせてある', '路面に付けた印（置く位置）'],
       view: { target: id, cam: { dir: [s * 1, 0, 0.8], dist: 1.5 }, orient: 'yoko', labels: [id], floor: DECK, tapes: [{ from: [p.x, LEFT_Y - 0.55, DECK + 0.003], to: [p.x, LEFT_Y + 0.55, DECK + 0.003], label0: '', label1: '支承の中心の線', color: 0x1c7ed6 }] },
     },
     {
@@ -136,7 +136,6 @@ function pressShots(id, first) {
       what: `${name}の支承の中心の線から帯の中心までの距離`,
       where: '帯のすぐ横にしゃがんで', dir: '真上から。縦長',
       must: ['巻尺の 0 を、支承の中心の線（路面の印）に当てている', '帯の中心の目盛りが 5 mm 単位で読める'],
-      note: first ? '' : '毎朝、置き直したら測り直す（手順書 §6 の4）。',
       view: { target: id, cam: { dir: [s * 0.3, -0.3, 1], dist: 0.6 }, orient: 'tate', labels: [id], floor: DECK },
     },
     {
@@ -154,7 +153,7 @@ function pressShots(id, first) {
       note: '足を離したら LED3 が消えることも確かめる（写真は踏んでいる所の1枚）。',
       view: { target: id, cam: { dir: [s * 0.4, 0.8, 0.9], dist: 0.8 }, orient: 'tate', labels: [id], floor: DECK },
     },
-  ].flatMap((x, i) => (i === 0 ? [x, ...thick] : [x]));
+  ].flatMap((x, i) => (i === 0 ? [x, ...thick] : [x])).filter((x) => first || x.id === `${id}-d`);
 }
 
 function tempShots(id, first) {
@@ -166,7 +165,7 @@ function tempShots(id, first) {
       id: `${id}-a`, title: `${id}（${name}）測定点の板`,
       what: `支間中央の鋼に貼った温度の測定点の板（${u}）`,
       where: '板の正面から', dir: '板に向けて真っすぐ。縦長',
-      must: [first ? '貼った位置の印（毎朝ここに貼り直す）' : '前の日の印の位置に貼った', '熱伝導の両面テープ（毎朝新しい物）で貼った', 'どの部材のどの面か分かる（少し引いて撮る）'],
+      must: ['貼った位置の印（はがれたときに、ここに貼り直す）', '熱伝導の両面テープで貼った', 'どの部材のどの面か分かる（少し引いて撮る）'],
       view: view(0.9, [0, id === 'T1' ? -1 : 1, 0.25]),
     },
     {
@@ -388,45 +387,44 @@ function vehicleInstallTask(day) {
     { id: 'mass-load', title: '載せる機材の質量', what: '試験車に載せる機材（まとめて）', where: '体重計か計量器の正面から', dir: '表示が読めるように', must: ['表示が読める', '載せる物が全部載っている'], view: { svg: 'scale', svgText: ['載せる機材'] } },
   );
   return {
-    id: 'vehicle', part: day === 1 ? '日中' : '朝', title: '車両のセンサの取り付け', role: '作業A・作業C',
-    desc: `ばね上4台・ばね下4台と、車載の MOSAIC（VM1）。付けたとき・付け直したときに撮る（前の日から付けたままなら、この作業はない）。順番：前輪の中心の高さ → 左の前から後ろ → 右の後ろから前 → VM1 → 質量。`,
-    ref: '手順書 §5・§7.1', device: 'spresense', shots, onlyIfAttached: true,
+    id: 'vehicle', part: day === 1 ? '日中' : '朝', title: day >= 4 ? '車両のセンサを付け直したとき' : '車両のセンサの取り付け', role: day === 6 ? '作業A' : '作業A・作業C',
+    desc: `${day >= 4 ? '3日目から付けたままの車両のセンサを、ずれた・外れたなどで付け直したときだけ撮る（付けたままなら、この作業はない）。' : `ばね上4台・ばね下4台と、車載の MOSAIC（VM1）。${day === 3 ? '3日目に付けたら、6日目まで付けたままにする（付け直すと位置が変わるため）。' : '予行の後に外す。'}`}順番：前輪の中心の高さ → 左の前から後ろ → 右の後ろから前 → VM1 → 質量。`,
+    ref: '手順書 §5・§7.1', device: 'spresense', shots, onlyIfAttached: day >= 4,
   };
 }
 
 // ---------- 作業の組み立て ----------
-// 同時打撃の板の並べ方（このアプリで決めた並び）：1段目 橋の SPRESENSE 12台、2段目 小野橋梁センサ 12台（位置の番号の順）、
-// 3段目 感圧と温度のロガー4台。どの段も左から番号の順。手順書 §3 の「全 SPRESENSE と小野橋梁センサ」のうち、橋に付ける台
-// 3つ目は、その名札を撮る位置（同時打撃の板の 3D の座標。板の中心が原点、Y が上）
-export const SYNC_ROWS = {
-  row1L: ['1段目の左半分', ['BRI_P001', 'BRI_P002', 'BRI_P003', 'BRI_P004', 'BRI_P005', 'BRI_P006'], [-0.6, 1.0, -0.1]],
-  row1R: ['1段目の右半分', ['BRI_P007', 'BRI_P008', 'BRI_P009', 'BRI_P010', 'BRI_P011', 'BRI_P012'], [0.6, 1.0, -0.1]],
-  row2L: ['2段目の左半分', ['E1', 'U11', 'U13', 'U15', 'E2', 'U22'].map(unitOf), [-0.6, 1.0, 0.12]],
-  row2R: ['2段目の右半分', ['U24', 'U32', 'U34', 'E7', 'U41', 'E8'].map(unitOf), [0.6, 1.0, 0.12]],
-  row3: ['3段目', ['PRESS_P001', 'PRESS_P002', 'TEMP_P001', 'TEMP_P002'], [0, 0.65, 0.34]],
+// 同時打撃の円の並び（手順書 §3）：橋の SPRESENSE 12台 → 小野橋梁センサ 12台（位置の番号の順）→ 感圧と温度のロガー 4台。
+// 円の上から時計回りに置くのは、このアプリで決めた。名札の写真は、この5つの区切りごとに撮る。
+export const SYNC_GROUPS = {
+  bri1: ['橋の SPRESENSE（前半）', ['BRI_P001', 'BRI_P002', 'BRI_P003', 'BRI_P004', 'BRI_P005', 'BRI_P006']],
+  bri2: ['橋の SPRESENSE（後半）', ['BRI_P007', 'BRI_P008', 'BRI_P009', 'BRI_P010', 'BRI_P011', 'BRI_P012']],
+  ono1: ['小野橋梁センサ（前半）', ['E1', 'U11', 'U13', 'U15', 'E2', 'U22'].map(unitOf)],
+  ono2: ['小野橋梁センサ（後半）', ['U24', 'U32', 'U34', 'E7', 'U41', 'E8'].map(unitOf)],
+  log: ['感圧と温度のロガー', ['PRESS_P001', 'PRESS_P002', 'TEMP_P001', 'TEMP_P002']],
 };
-function syncTask(day, after) {
+function syncTask() {
   const shots = [{
-    id: 'sync-row', title: '板の全体（真上から）',
-    what: '板に並べて固定した 28 台の全体',
-    where: '板の真上から（脚立か、板を低い所に置く）', dir: '真上から。横長',
-    must: ['3段の並びの全体（左右の端まで）', '軸の向き（名札の矢印）がそろっている', '板に固定してある'],
+    id: 'sync-all', title: '円の全体',
+    what: '円く並べた 28 台と、中心の印',
+    where: '円の外の、高い所から（脚立か、立ったまま真上に近く）', dir: '真上に近い斜めから。横長',
+    must: ['28 台の全体と、中心の印が入っている', '全台が中心から同じ距離にある', '軸の向き（名札の矢印）がそろっている'],
     note: 'この1枚は並び方の記録。名札は次の5枚で、近くから読めるように撮る。',
-    view: { scene: 'sync', target: 'all', cam: { at: [0, 1.7, 0.08] }, orient: 'yoko', over: { at: [1.4, 1.1, 1.5] }, legend: '並べ方の模式（実物の形ではない）' },
+    view: { svg: 'ring', svgText: ['all'] },
   }];
-  for (const [k, [name, ids, at]] of Object.entries(SYNC_ROWS)) {
+  for (const [k, [name, ids]] of Object.entries(SYNC_GROUPS)) {
     shots.push({
       id: `sync-${k}`, title: `名札：${name}（${ids[0]}〜${ids[ids.length - 1]}）`,
-      what: `${name}に並べた ${ids.length} 台の名札`,
-      where: `${name}の真上から、近くで`, dir: '真上から。横長',
-      must: [`${ids.join('・')} の名札が全部読める`, 'ほかの段の台が入っても良いが、この台の名札が切れていない'],
-      view: { scene: 'sync', target: k, cam: { at }, orient: 'yoko', labels: [k], over: { at: [1.4, 1.1, 1.5] } },
+      what: `${name}の ${ids.length} 台の名札`,
+      where: `円の外から、${name}の近くで`, dir: '斜め上から。横長',
+      must: [`${ids.join('・')} の名札が全部読める`, 'ほかの台が入っても良いが、この台の名札が切れていない'],
+      view: { svg: 'ring', svgText: [k] },
     });
   }
   return {
-    id: after ? 'sync-after' : 'sync', part: after ? '夕方' : '日中', title: after ? '同時打撃（撤去の後）' : '同時打撃（取り付けの前）', role: after ? '責任者・作業B' : '作業B（13:20 から責任者も）',
-    desc: '橋に付ける 28 台（橋の SPRESENSE 12・小野橋梁センサ 12・感圧と温度のロガー 4）を、1枚の板に3段に並べて固定する。1段目に BRI_P001〜P012、2段目に小野橋梁センサを位置の番号の順、3段目に PRESS_P001・PRESS_P002・TEMP_P001・TEMP_P002（どの段も左から）。軸の向きをそろえ、全台が記録中で GNSS と PPS を受けているのを確かめてから、木槌で5回、間をあけて叩く。叩いた時刻は記録から分かるので、書かない。車両の8台は、付けるたびに叩く（案。手順書 §3）。' + (after ? '' : '叩いた後、感圧と温度のロガーは記録を止めて屋内に置く（橋に置くのは2日目の朝）。橋の24台は、記録を止めずに取り付けに移る。'),
-    ref: after ? '手順書 §12' : '手順書 §3', shots,
+    id: 'sync', part: '日中', title: '同時打撃（取り付けの前）', role: '作業B（13:20 から責任者も）',
+    desc: '橋に付ける 28 台（橋の SPRESENSE 12・小野橋梁センサ 12・感圧と温度のロガー 4）を、平らなアスファルトの路面に、叩く所を中心にした円（半径 70 cm〜1 m）の上に、同じ距離で並べる（板は使わない）。円の上から時計回りに、BRI_P001〜P012 → 小野橋梁センサ（位置の番号の順）→ PRESS_P001・PRESS_P002・TEMP_P001・TEMP_P002。軸の向きをそろえ、全台が記録中で GNSS と PPS を受けているのを確かめてから、ハンマー（086D50）で中心の印を5回、間をあけて叩く。叩いた時刻は記録から分かるので、書かない。叩いた後、感圧と温度のロガーは記録を止めて屋内に置く（橋に置くのは2日目の朝）。橋の24台は、記録を止めずに取り付けに移る。',
+    ref: '手順書 §3', shots,
   };
 }
 
@@ -448,18 +446,21 @@ function shakerMorningTask(first) {
 
 function pressTask(first) {
   return {
-    id: 'press', part: '朝', title: first ? '感圧センサを置く（初めて）' : '感圧センサを置き直す', role: '作業A',
-    desc: `入口に PRESS_P001、出口に PRESS_P002。${first ? '置く位置の路面に印を付ける。' : '前の日の印の位置に置き直す。'}雨が降り出したら、すぐ外す。`,
+    id: 'press', part: '朝', title: first ? '感圧センサを置く（初めて）' : '感圧センサの記録を始める', role: '作業A',
+    desc: `入口に PRESS_P001、出口に PRESS_P002。${first ? '置く位置の路面に印を付ける。置いたら、6日目の撤去まで置いたままにする（動かすと位置が変わるため）。' : '帯は前の日から置いたまま。SD カードを戻してモバイルバッテリーをつなぎ、帯を踏んで LED3 を確かめる。'}計測中に雨が降り出したら、外さずにブルーシートで覆う。`,
     ref: '手順書 §6', device: 'press', device2: 'pressEnd',
     shots: [...pressShots('PRESS_P001', first), ...pressShots('PRESS_P002', first)],
   };
 }
 
 function tempTask(first) {
+  if (!first) {
+    return noPhoto('temp', '朝', '温度センサの記録を始める', `T1・T2 の板とロガーは、前の日から付けたまま。SD カードを戻してモバイルバッテリーをつなぎ、記録を始める。GNSS の測位と PPS を確かめる。測定点の板がはがれていたら、印の位置に新しい熱伝導の両面テープで貼り直し、「台を替えた・異常があったとき」で撮る。`, '手順書 §7.2', '作業B');
+  }
   return {
-    id: 'temp', part: '朝', title: first ? '温度センサを付ける（初めて）' : '温度センサを付け直す', role: first ? '作業A' : '作業B',
-    desc: `T1（日なた側）に ${unitOf('T1')}、T2（日かげ側）に ${unitOf('T2')}。${first ? '貼った位置に印を付ける。' : '前の日の印の位置に、新しい熱伝導の両面テープで貼り直す。'}モバイルバッテリーをつないで記録を始め、GNSS の測位と PPS を確かめる。雨が降り出したら、すぐ外す。`,
-    ref: '手順書 §7.2', device: 'temp', shots: [...tempShots('T1', first), ...tempShots('T2', first)],
+    id: 'temp', part: '朝', title: '温度センサを付ける（初めて）', role: '作業A',
+    desc: `T1（日なた側）に ${unitOf('T1')}、T2（日かげ側）に ${unitOf('T2')}。貼った位置に印を付ける。貼ったら、6日目の撤去まで貼ったままにする（貼り直すと位置が変わるため）。モバイルバッテリーをつないで記録を始め、GNSS の測位と PPS を確かめる。計測中に雨が降り出したら、外さずにブルーシートで覆う。`,
+    ref: '手順書 §7.2', device: 'temp', shots: [...tempShots('T1', true), ...tempShots('T2', true)],
   };
 }
 
@@ -491,7 +492,7 @@ function installTask() {
   ['G1', 'G2', 'G3', 'G4'].forEach((g) => shots.push(routeShot(g)));
   return {
     id: 'install', part: '日中', title: '橋のセンサの取り付け（24台）', role: '責任者・作業B',
-    desc: `割り当て表のとおりの台を付ける（G1 は上フランジの上面、G2〜G4 は主桁の真上の床版の上面。磁石で固定し、結束バンドは使わない）。午前に付けた印の所に付け、面の汚れを落とす。1台ごとに「付けた所」と「巻尺」を撮る。順番：静的載荷に使う支承の4点（E1・E2・E7・E8）を先に。その後は ${ORDER_NOTE}。付けた台は、6日目の撤去まで橋に残す。最後に主桁ごとにアンテナとケーブルを撮る。`,
+    desc: `割り当て表のとおりの台を付ける（G1 は上フランジの上面、G2〜G4 は主桁の真上の床版の上面。建設用両面テープで貼り（磁石は使わない）、結束バンドは使わない）。午前に付けた印の所に付け、面の汚れを落とす。1台ごとに「付けた所」と「巻尺」を撮る。順番：静的載荷に使う支承の4点（E1・E2・E7・E8）を先に。その後は ${ORDER_NOTE}。付けた台は、6日目の撤去まで橋に残す。最後に主桁ごとにアンテナとケーブルを撮る。`,
     ref: '手順書 §4', device: 'spresense', shots,
   };
 }
@@ -510,7 +511,7 @@ function stateMorningTask(day) {
 function ambientTask(day) {
   const when = day === 2 ? '加振をしない時間に1回' : '午前の終わりに';
   return {
-    id: 'ambient', part: '日中', title: '常時微動・跳躍・打撃', role: '責任者・作業C',
+    id: 'ambient', part: '日中', title: '常時微動・跳躍・打撃', role: day === 6 ? '責任者・作業B' : '責任者・作業C',
     desc: `${when}行う。常時微動は橋の上と下に人がいない状態で5〜10分記録する。跳躍は決めた位置で3回跳ぶ。打撃は H1〜H8 を橋の外から各5回（力は 0.5〜1 kN。1打ごとの力は Mac のアプリが記録するので、写真はない）。${day >= 3 && day <= 5 ? 'このあと S1 の2段階の掃引を行う。' : ''}`,
     ref: '手順書 §9', shots: [
       {
@@ -562,7 +563,7 @@ function passageTask(day) {
     );
   }
   return {
-    id: 'passage', part: '日中', title: '走行（午後）', role: '運転：作業A、見張り：作業B・作業C、データ：責任者',
+    id: 'passage', part: '日中', title: '走行（午後）', role: day === 6 ? '運転：作業B、見張り：作業A・責任者（データも）' : '運転：作業B、見張り：作業A・作業C、データ：責任者',
     desc: '割り付けの表の順に走る（1日30回前後）。床版の端の手前10 m以上から一定の速度で、案内線に沿って走り、橋を出て10 m以上進んで止まる。20 s以上待ってから次へ。その間、橋の上と下に人が入らない。走行の時刻は後処理で取り出すので、書かない。',
     ref: '手順書 §10', shots,
   };
@@ -570,8 +571,8 @@ function passageTask(day) {
 
 function shakerOffTask(day) {
   return {
-    id: 'shaker-off', part: '夕方', title: '加振器を外す', role: day === 1 ? '責任者・作業C' : '責任者（運ぶときは作業C と2人）',
-    desc: '加振のアプリで「SSD に写す」をして終え、PA05・DHO914S・Mac の電源を切り、おもり（ワッシャーの束と 353B33）・クランプ4本・加振器の本体を外して屋内に置く。PA05・DHO914S・Mac は、もう1枚のブルーシートで覆う。',
+    id: 'shaker-off', part: '夕方', title: '加振器を外す', role: day === 1 ? '責任者・作業C' : day === 6 ? '責任者（運ぶときは作業D と2人）' : '責任者（運ぶときは作業C と2人）',
+    desc: `加振のアプリで「SSD に写す」をして終え、PA05・DHO914S・Mac の電源を切り、おもり（ワッシャーの束と 353B33）・クランプ4本・加振器の本体を外して屋内に置く。${day === 6 ? 'PA05・DHO914S・Mac も屋内に運ぶ（この日で加振は終わり）。' : 'PA05・DHO914S・Mac は、もう1枚のブルーシートで覆う。'}`,
     ref: '手順書 §1.2・§8 の7', shots: [
       {
         id: 'S1-empty', title: '外した後の S1', what: '加振器を外した後の G1 の上フランジ', where: '橋の外（G1 の側の地面）から', dir: '斜め上から',
@@ -583,39 +584,44 @@ function shakerOffTask(day) {
         must: ['機器が全部覆われている', 'ケーブルの中継が地面から浮いている'],
         view: { target: TARP, ring: 0.4, targetLabel: 'ブルーシート（置き場所の目安）', cam: { dir: [-0.4, -1, 0.8], dist: 2.8 }, orient: 'yoko', shaker: false },
       },
-    ],
+    ].filter((x) => day !== 6 || x.id !== 'tarp-cover'),
   };
 }
 
+const VEHICLE_OFF = {
+  1: ['車両のセンサを外す', '予行の後、車両のセンサ（ばね上4・ばね下4・車載の MOSAIC）を外す。', '手順書 §1.1'],
+  run: ['車両のセンサの記録を止める', '走行の後、車両のセンサの記録を止めて SD カードを抜き、モバイルバッテリーを外す（ばね下は PC を外す）。センサとケーブルは、6日目まで付けたままにする。', '手順書 §1.2・§5 の3'],
+  6: ['車両のセンサを外す', '走行の後、車両のセンサ（ばね上4・ばね下4・車載の MOSAIC）を外す。SPRESENSE の8台は、記録を止めずに、時刻差の試験のために橋へ持っていく（ばね下の4台の運び方は未定）。', '手順書 §1.2・§12'],
+};
 function eveningTasks(day) {
-  const list = [];
-  if (day < 6) {
-    list.push(shakerOffTask(day));
-    if (day !== 2) list.push(noPhoto('vehicle-off', '夕方', '車両のセンサを外す', `${day === 1 ? '予行' : '走行'}の後、車両のセンサ（ばね上4・ばね下4・車載の MOSAIC）を外す。`, day === 1 ? '手順書 §1.1' : '手順書 §1.2', '作業A'));
-    if (day >= 2) list.push({
-      id: 'press-temp-off', part: '夕方', title: '感圧センサと温度センサを外す', role: day === 2 ? '作業C' : '作業A', nophoto: true,
-      desc: '記録を止めて SD カードを抜く。感圧の帯はゴムシートごと外し、直径 20 cm ほどの輪にゆるく丸めて（端子のある端は折らない）屋内に置く。温度センサは測定点の板を鋼からはがし、ロガーと一緒に屋内に置く。', ref: '手順書 §6 の4・§7.2 の7',
-    });
-    list.push({
-      id: 'night-cover', part: '夕方', title: 'モバイルバッテリーを外し、橋をブルーシートで覆う', role: { 1: '作業B（16:35 から作業A・作業C も）', 2: '作業A・作業C' }[day] ?? '作業A・作業B・作業C',
-      desc: '橋の24台の記録を止めて SD カードを抜き、モバイルバッテリーを外して回収し、充電する（センサは橋に残す）。橋全体を、大きなブルーシート（研究室にある物）で覆う。夜は記録しない。',
-      ref: day === 1 ? '手順書 §1.1・§1.2' : '手順書 §1.2', shots: [
-        {
-          id: 'cover-in', title: '覆った全体（入口の側から）', what: 'ブルーシートで覆った橋の全体', where: '入口の斜め前の地面から', dir: '橋の全体。横長',
-          must: ['入口の側の半分の台が、すべてシートの下に入っている'],
-          view: { target: [4.16, 0, 0], ring: 0.01, cam: { at: [-4, -4, 1.3] }, orient: 'yoko', labels: BRIDGE_ORDER },
-        },
-        {
-          id: 'cover-out', title: '覆った全体（出口の側から）', what: 'ブルーシートで覆った橋の全体', where: '出口の斜め先の地面から', dir: '橋の全体。横長',
-          must: ['出口の側の半分の台が、すべてシートの下に入っている'],
-          view: { target: [4.16, 0, 0], ring: 0.01, cam: { at: [12.3, 4, 1.3] }, orient: 'yoko', labels: BRIDGE_ORDER },
-        },
-      ],
-    });
-    if (day >= 2) list.push(noPhoto('mosaic-off', '夕方', 'MOSAIC の記録を止める', '四隅の4台（C1〜C4）と BM1 の記録を止め、データを USB メモリに写して回収し、モバイルバッテリーを外す。USB メモリは「データの回収」で写す。', '手順書 §1.2・§7.1', day === 2 ? '作業B' : '責任者'));
-  } else {
-    list.push(noPhoto('vehicle-off', '夕方', '車両のセンサを外す', '走行の後、車両のセンサ（ばね上4・ばね下4・車載の MOSAIC）を外す。', '手順書 §1.2', '作業A'));
+  const list = [shakerOffTask(day)];
+  if (day !== 2) {
+    const [title, desc, ref] = VEHICLE_OFF[day] ?? VEHICLE_OFF.run;
+    list.push(noPhoto('vehicle-off', '夕方', title, desc, ref, '作業A'));
   }
+  if (day === 6) {
+    list.push(removalTask(), tsyncTask(), collectTask(day));
+    return list;
+  }
+  if (day >= 2) list.push(noPhoto('press-temp-off', '夕方', '感圧センサと温度センサの記録を止める', '記録を止めて SD カードを抜き、モバイルバッテリーを外す。センサは付けたままにし、夜は橋を覆うブルーシートの下に残す（付け直すと位置が変わるため）。', '手順書 §6 の4・§7.2 の7', day === 2 ? '作業C' : '作業A'));
+  const covered = day >= 2 ? ['感圧センサと温度センサも、シートの下に入っている'] : [];
+  list.push({
+    id: 'night-cover', part: '夕方', title: 'モバイルバッテリーを外し、橋をブルーシートで覆う', role: { 1: '作業B（16:35 から作業A・作業C も）', 2: '作業A・作業C' }[day] ?? '作業A・作業B・作業C',
+    desc: `橋の24台の記録を止めて SD カードを抜き、モバイルバッテリーを外して回収し、充電する（センサは橋に残す）。橋全体を、大きなブルーシート（研究室の物）で覆う${day >= 2 ? '（感圧センサと温度センサも覆う）' : ''}。夜は記録しない。`,
+    ref: day === 1 ? '手順書 §1.1・§1.2' : '手順書 §1.2', shots: [
+      {
+        id: 'cover-in', title: '覆った全体（入口の側から）', what: 'ブルーシートで覆った橋の全体', where: '入口の斜め前の地面から', dir: '橋の全体。横長',
+        must: ['入口の側の半分の台が、すべてシートの下に入っている', ...covered],
+        view: { target: [4.16, 0, 0], ring: 0.01, cam: { at: [-4, -4, 1.3] }, orient: 'yoko', labels: BRIDGE_ORDER },
+      },
+      {
+        id: 'cover-out', title: '覆った全体（出口の側から）', what: 'ブルーシートで覆った橋の全体', where: '出口の斜め先の地面から', dir: '橋の全体。横長',
+        must: ['出口の側の半分の台が、すべてシートの下に入っている', ...covered],
+        view: { target: [4.16, 0, 0], ring: 0.01, cam: { at: [12.3, 4, 1.3] }, orient: 'yoko', labels: BRIDGE_ORDER },
+      },
+    ],
+  });
+  if (day >= 2) list.push(noPhoto('mosaic-off', '夕方', 'MOSAIC の記録を止める', '四隅の4台（C1〜C4）と BM1 の記録を止め、データを USB メモリに写して回収し、モバイルバッテリーを外す。USB メモリは「データの回収」で写す。', '手順書 §1.2・§7.1', day === 2 ? '作業B' : '責任者'));
   list.push(collectTask(day));
   return list;
 }
@@ -637,7 +643,7 @@ function collectTask(day) {
 function swapTask() {
   return {
     id: 'swap', part: '日中', title: '台を替えた・異常があったとき', role: '全員', repeat: true,
-    desc: '起きたときに撮る。台を替えたら、替えた台1台につき「替えた台」を1枚。異常があったら、1か所につき「異常のある所」を1枚。支承の4点（E1・E2・E7・E8）のセンサに触れたときは、そのセンサを「替えた台」と同じ撮り方で1枚。台を替えたら、夕方にその日の設置の記録の CSV を直す。',
+    desc: '起きたときに撮る。台を替えたら、替えた台1台につき「替えた台」を1枚（状態の変更で外して戻した台も同じ）。異常があったら、1か所につき「異常のある所」を1枚。支承の4点（E1・E2・E7・E8）のセンサに触れたときは、そのセンサを「替えた台」と同じ撮り方で1枚。台を替えたら、夕方にその日の設置の記録の CSV を直す。',
     ref: '手順書 §4 の3・6・8', shots: [
       {
         id: 'swap-unit', title: '替えた台（名札と巻尺）', what: '替えて付けた台', where: 'その位置の撮り方（設置の写真）と同じ所から', dir: '縦長',
@@ -748,29 +754,6 @@ function dimensionsTask() {
   };
 }
 
-function jointStepTask() {
-  const shots = [];
-  BR.jointX.forEach((x, i) => {
-    [['L', '左', LEFT_Y], ['R', '右', RIGHT_Y]].forEach(([k, nm, y]) => {
-      shots.push({
-        id: `j${i + 1}${k}-step`, title: `J${i + 1}・${nm}の通り道：段差`, what: `継ぎ目 J${i + 1} の、${nm}の車輪の通り道の段差`, where: '床版の上にしゃがんで、真横から', dir: '直定規とすきまゲージの高さで',
-        must: ['直定規が継ぎ目をまたいでいる', 'すきまゲージの番号（厚さ）が読める'],
-        view: { target: [x, y, DECK], ring: 0.06, joints: true, cam: { dir: [0, -1, 0.25], dist: 0.6 }, orient: 'yoko', targetLabel: `J${i + 1}・${nm}`, floor: DECK },
-      });
-      shots.push({
-        id: `j${i + 1}${k}-gap`, title: `J${i + 1}・${nm}の通り道：すき間`, what: `継ぎ目 J${i + 1} の、${nm}の車輪の通り道のすき間`, where: '床版の上にしゃがんで、真上から', dir: '真上から',
-        must: ['すき間に差したすきまゲージ', 'ゲージの番号（厚さ）が読める'],
-        view: { target: [x, y, DECK], ring: 0.06, joints: true, cam: { dir: [-0.2, -0.2, 1], dist: 0.5 }, orient: 'tate', targetLabel: `J${i + 1}・${nm}`, floor: DECK },
-      });
-    });
-  });
-  return {
-    id: 'joints', part: '日中', title: '継ぎ目の段差とすき間', role: '作業B・作業C',
-    desc: `12か所の継ぎ目で、左右の車輪の通り道（目安：左は y ≈ ${LEFT_Y} m、右は y ≈ ${RIGHT_Y} m）の段差とすき間を、直定規とすきまゲージで測る。継ぎ目は入口から順に J1〜J12。`,
-    ref: '手順書 §14', shots,
-  };
-}
-
 function hammerMarkTask() {
   const shots = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8'].map((id) => {
     const p = P[id];
@@ -802,27 +785,15 @@ function deckBoltTask() {
       });
     });
   }
-  ['G2', 'G3', 'G4'].forEach((g) => {
-    shots.push({
-      id: `deckbolt-dia-${g}`, title: `床版のボルトの径（${g}）`, what: `${g} の線のボルト1本の径`, where: 'ボルトの真横から', dir: 'ノギスの目盛りが読めるように',
-      must: ['ノギスがボルトの軸（ねじの外径）を挟んでいる', '目盛りが読める'], view: { svg: 'caliper', svgText: [g] },
-    });
-  });
   return {
     id: 'deck-bolts', part: '日中', title: '床版を主桁に留めるボルト', role: '作業B・作業C',
-    desc: '13枚の床版（入口の側から 1〜13）ごとに、G2・G3・G4 の線のボルトの位置・本数を撮り、各線で1本ずつ径を測る。ナットのゆるみも手で確かめる。床版と主桁の付け方のモデルに使う。',
+    desc: '13枚の床版（入口の側から 1〜13）ごとに、G2・G3・G4 の線のボルトの位置・本数を撮る。ナットのゆるみも手で確かめる。床版と主桁の付け方のモデルに使う。',
     ref: '手順書 §14', shots,
   };
 }
 
 function vehicleAloneTask() {
-  const wheels = [['FL', '前左', 0, 0.645], ['FR', '前右', 0, -0.645], ['RL', '後左', -1.9, 0.64], ['RR', '後右', -1.9, -0.64]];
   const shots = [];
-  wheels.forEach(([k, nm, x, y]) => shots.push({
-    id: `wheel-${k}`, title: `輪重（${nm}）`, what: `${nm}の車輪を載せた台はかりの表示`, where: '台はかりの正面から', dir: '表示が読めるように',
-    must: ['台はかりの表示', '車輪がはかりの真ん中に載っている'],
-    view: { scene: 'truck', target: [x, y, 0.05], ring: 0.2, targetLabel: nm, cam: { dir: [0.4, Math.sign(y), 0.6], dist: 1.2 }, orient: 'yoko' },
-  }));
   [['push-f', '押して離す（前）', [0.9, 0, 0.9]], ['push-r', '押して離す（後）', [-2.9, 0, 0.9]], ['push-l', '押して離す（左）', [-0.9, 0.8, 0.9]], ['push-rr', '押して離す（右）', [-0.9, -0.8, 0.9]]].forEach(([id, t, at]) => shots.push({
     id, title: t, what: '押す人の手の位置（始める前）', where: '車の外から', dir: '押す所と車の全体が入るように',
     must: ['押す所', '輪止め'], note: '5回押して離す。この写真の時刻が、その向きの5回の始め。',
@@ -832,20 +803,14 @@ function vehicleAloneTask() {
     { id: 'step-h', title: '段差の高さ', what: '段差（2〜3 cm）の板', where: '板の横から', dir: '真横から', must: ['物差しで段差の高さが読める'], view: { svg: 'step', svgText: ['段差の板', '2〜3 cm'] } },
     { id: 'step-f', title: '段差を落ちる（前輪）の前', what: '段差の上に載った前輪', where: '車の横から', dir: '前輪と段差が入るように', must: ['前輪と段差の位置'], note: '5回。この写真の時刻が5回の始め。', view: { scene: 'truck', target: [0, 0.645, 0.15], ring: 0.3, targetLabel: '前輪', cam: { dir: [0.3, 1, 0.4], dist: 1.6 }, orient: 'yoko' } },
     { id: 'step-r', title: '段差を落ちる（後輪）の前', what: '段差の上に載った後輪', where: '車の横から', dir: '後輪と段差が入るように', must: ['後輪と段差の位置'], note: '5回。この写真の時刻が5回の始め。', view: { scene: 'truck', target: [-1.9, 0.64, 0.15], ring: 0.3, targetLabel: '後輪', cam: { dir: [-0.3, 1, 0.4], dist: 1.6 }, orient: 'yoko' } },
-    { id: 'board-t', title: '越える板の厚さ', what: '越える板（約 1 cm）', where: '板の横から', dir: 'ノギスの目盛りが読めるように', must: ['ノギスで板の厚さが読める'], view: { svg: 'caliper', svgText: ['越える板'] } },
-    { id: 'board', title: '板を越える（始める前）', what: '板と、板に向かう前輪', where: '車の横から', dir: '板と前輪が入るように', must: ['板の位置', '前輪'], note: '5回。この写真の時刻が5回の始め。', view: { scene: 'truck', target: [0.6, 0.645, 0.02], ring: 0.25, targetLabel: '板', cam: { dir: [0.4, 1, 0.5], dist: 1.8 }, orient: 'yoko' } },
     { id: 'wb-l', title: 'ホイールベース（左）', what: '前輪と後輪の中心の間（左）', where: '車の左の外から', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が前輪の中心', '後輪の中心の目盛り'], view: { scene: 'truck', target: [-1.9, 0.645, GEN.hub], ring: 0.12, cam: { dir: [0.2, 1, 0.2], dist: 1.4 }, orient: 'yoko', tapes: [{ from: [0, 0.645, GEN.hub], to: [-1.9, 0.645, GEN.hub], label0: '前輪の中心', label1: '後輪の中心' }] } },
     { id: 'wb-r', title: 'ホイールベース（右）', what: '前輪と後輪の中心の間（右）', where: '車の右の外から', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が前輪の中心', '後輪の中心の目盛り'], view: { scene: 'truck', target: [-1.9, -0.645, GEN.hub], ring: 0.12, cam: { dir: [0.2, -1, 0.2], dist: 1.4 }, orient: 'yoko', tapes: [{ from: [0, -0.645, GEN.hub], to: [-1.9, -0.645, GEN.hub], label0: '前輪の中心', label1: '後輪の中心' }] } },
     { id: 'tread-f', title: 'トレッド（前）', what: '左右の前輪の中心の間', where: '車の前の真ん中から（前のバンパーの下を、地面すれすれに）', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が左の前輪の中心', '右の前輪の中心の目盛り'], view: { scene: 'truck', target: [0.05, -0.645, 0.02], ring: 0.1, cam: { at: [1.6, 0, 0.1] }, floor: 0, orient: 'yoko', tapes: [{ from: [0.05, 0.645, 0.02], to: [0.05, -0.645, 0.02], label0: '左', label1: '右' }] } },
     { id: 'tread-r', title: 'トレッド（後）', what: '左右の後輪の中心の間', where: '車の後ろから', dir: '巻尺の目盛りが読めるように', must: ['巻尺の 0 が左の後輪の中心', '右の後輪の中心の目盛り'], view: { scene: 'truck', target: [-1.9, -0.64, 0.02], ring: 0.1, cam: { dir: [-1, 0, 0.4], dist: 1.6 }, orient: 'yoko', tapes: [{ from: [-1.95, 0.64, 0.02], to: [-1.95, -0.64, 0.02], label0: '左', label1: '右' }] } },
   );
-  wheels.forEach(([k, nm, x, y]) => shots.push({
-    id: `tire-${k}`, title: `タイヤの空気圧（${nm}）`, what: `${nm}のタイヤに当てた空気圧計`, where: 'タイヤの横から', dir: '空気圧計の表示が読めるように',
-    must: ['空気圧計の表示', 'どのタイヤか分かる'], view: { scene: 'truck', target: [x, y, GEN.hub], ring: 0.2, targetLabel: nm, cam: { dir: [0.3, Math.sign(y), 0.3], dist: 1.0 }, orient: 'tate' },
-  }));
   return {
-    id: 'vehicle-alone', part: '日中', title: '車両単独の試験', role: '作業A・作業C',
-    desc: '輪重、押して離す（前・後・左・右、各5回）、段差（2〜3 cm）を落ちる（前輪・後輪、各5回）、板（約 1 cm）を越える（5回）、寸法、タイヤの空気圧。輪止めをする。車のセンサは記録中にしておく。',
+    id: 'vehicle-alone', part: '日中', title: '車両単独の試験', role: '作業A・作業C（段差の運転は作業B、14:40 から）',
+    desc: '押して離す（前・後・左・右、各5回）、段差（2〜3 cm）を落ちる（前輪・後輪、各5回）、寸法（ホイールベース・トレッド）。輪止めをする。車のセンサは記録中にしておく。',
     ref: '手順書 §14', shots,
   };
 }
@@ -861,7 +826,7 @@ function staticLoadTask() {
     );
   });
   return {
-    id: 'static', part: '日中', title: '静的載荷', role: '全員（運転は作業A）',
+    id: 'static', part: '日中', title: '静的載荷', role: '全員（運転は作業B）',
     desc: '止める位置は例（支間の1/4・1/2・3/4）で、未定（計画の担当が決める）。位置ごとに「無載荷 → 車を止める → 無載荷」を、各1分以上。小野橋梁センサの温度が落ち着いてから始める。直前と直後の無載荷の差が載荷の 10% を超えたら、その位置をやり直す。',
     ref: '手順書 §14', shots,
   };
@@ -909,7 +874,7 @@ export const PAPER = [
   P_({ id: 'bearing-out', order: 15, days: [1, 2, 3, 4, 5, 6], last: 6, group: '橋', title: '支承（出口・G1）', use: 'データセットの論文の方法（境界の説明）',
     what: '出口の G1 の支承と台座', where: '橋の外（G1 の側）から', dir: '支承の高さで。横長', must: ['支承の全体と、固定か可動かが分かる形', '物差し（大きさの基準）'],
     view: pv({ target: 'node:bearing_x8.71_G1', targetLabel: '出口・G1 の支承', ring: 0.18, cam: { dir: [0.4, -1, 0.15], dist: 0.9 } }) }),
-  P_({ id: 'joint', order: 16, days: [1, 2, 3, 4, 5, 6], last: 6, group: '橋', title: '床版の継ぎ目（J1、左の車輪の通り道）', use: 'データセットの論文の方法（継ぎ目の実測の説明）',
+  P_({ id: 'joint', order: 16, days: [1, 2, 3, 4, 5, 6], last: 6, group: '橋', title: '床版の継ぎ目（J1、左の車輪の通り道）', use: 'データセットの論文の方法（継ぎ目の説明）',
     what: '継ぎ目 J1 と、左の車輪の通り道', where: '床版の上から', dir: '斜め上から。横長', must: ['継ぎ目の段差とすき間が分かる', '物差し（大きさの基準）'],
     view: pv({ target: [BR.jointX[0], LEFT_Y, DECK], ring: 0.08, joints: true, targetLabel: 'J1', cam: { dir: [-0.6, 0.3, 0.8], dist: 0.8 }, floor: DECK }) }),
   // 橋（全部の機器を付けた後）
@@ -948,15 +913,15 @@ export const PAPER = [
   // 橋のセンサ（種類ごとの代表）
   P_({ id: 'rep-imu-g1', order: 40, days: [1, 2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '加速度計（IMU）の代表：G1 の上フランジ（U12）', use: 'データセットの論文の方法（取り付けの代表の写真）、計測装置の論文（運用）',
     what: `U12 に付けた加速度計（${unitOf('U12')}）とアンテナ`, where: '橋の外（G1 の側）から', dir: '斜め上から。横長',
-    must: ['容器・磁石の台・アンテナと、上フランジ', '物差し（大きさの基準）'], note: '1日目の取り付けの時、覆いをかぶせる前が最適。後の日は覆いを外して撮り、すぐ戻す。',
+    must: ['容器・アンテナと、上フランジ（両面テープで貼った所）', '物差し（大きさの基準）'], note: '1日目の取り付けの時、覆いをかぶせる前が最適。後の日は覆いを外して撮り、すぐ戻す。',
     view: pv({ target: 'U12', labels: ['U12'], cam: { dir: [-0.35, -0.8, 0.8], dist: 0.65 } }) }),
   P_({ id: 'rep-imu-deck', order: 41, days: [1, 2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '加速度計（IMU）の代表：床版の上（U23）', use: 'データセットの論文の方法（取り付けの代表の写真）、計測装置の論文（運用）',
     what: `U23 に付けた加速度計（${unitOf('U23')}）とアンテナ`, where: '床版の上から', dir: '斜め上から。横長',
-    must: ['容器・磁石の台・アンテナと、床版', '物差し（大きさの基準）'], note: '1日目の取り付けの時、覆いをかぶせる前が最適。',
+    must: ['容器・アンテナと、床版（両面テープで貼った所）', '物差し（大きさの基準）'], note: '1日目の取り付けの時、覆いをかぶせる前が最適。',
     view: pv({ target: 'U23', labels: ['U23'], cam: { dir: [-0.5, 0.4, 0.9], dist: 0.65 } }) }),
   P_({ id: 'rep-ono', order: 42, days: [1, 2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '小野橋梁センサの代表：G1 の上フランジ（U13）', use: 'データセットの論文の方法（取り付けの代表の写真）',
     what: `U13 に付けた小野橋梁センサ（${unitOf('U13')}）とアンテナ`, where: '橋の外（G1 の側）から', dir: '斜め上から。横長',
-    must: ['本体・磁石の台・アンテナと、上フランジ', '物差し（大きさの基準）'], note: '1日目の取り付けの時、覆いをかぶせる前が最適。',
+    must: ['本体・アンテナと、上フランジ（両面テープで貼った所）', '物差し（大きさの基準）'], note: '1日目の取り付けの時、覆いをかぶせる前が最適。',
     view: pv({ target: 'U13', labels: ['U13'], cam: { dir: [-0.35, -0.8, 0.8], dist: 0.65 } }) }),
   P_({ id: 'rep-bearing-pt', order: 43, days: [1, 2, 3, 4, 5, 6], last: 6, group: 'センサ', title: '支承の点のセンサ（E1）', use: 'データセットの論文の方法（支承の傾きを測る点）',
     what: `E1 のセンサ（${unitOf('E1')}）と、その下の支承`, where: '橋の外（G1 の側）から', dir: 'センサと支承が両方入るように。横長',
@@ -1002,9 +967,9 @@ export const PAPER = [
   P_({ id: 'rep-hammer', order: 53, days: [2, 3, 4, 5, 6], last: 6, group: '加振・打撃', title: '打撃の様子（H2）', use: 'データセットの論文の方法（打撃の試験）',
     what: 'インパクトハンマー 086D50 の先を H2 に当てて止めた所（叩かない）', where: '打つ人の後ろの斜めから', dir: 'ハンマーと叩く点が入るように。横長', must: ['ハンマーの先が H2 の印に当たっている', '打つ人の顔が写っていない'], note: '叩いている所ではなく、構えて止めた所を撮る。',
     view: pv({ target: 'H2', labels: ['H2'], cam: { dir: [0.8, -1, 0.45], dist: 2.0 } }) }),
-  P_({ id: 'rep-sync', order: 54, days: [1, 6], last: 6, group: '加振・打撃', title: '同時打撃（板に並べた全台）', use: 'データセットの論文の技術的な確認（時刻の確認）、計測装置の論文（時刻の確認）',
-    what: '板に並べて固定した全台と、木槌', where: '板の斜め上から', dir: '横長', must: ['全台が並んだ様子', '木槌', '人の顔が写っていない'], note: '1日目の取り付けの前か、6日目の撤去の後。',
-    view: { scene: 'sync', target: 'all', cam: { at: [0.9, 0.6, 1.0] }, orient: 'yoko', over: { at: [1.4, 1.1, 1.5] }, legend: '並べ方は模式' } }),
+  P_({ id: 'rep-sync', order: 54, days: [1], last: 1, group: '加振・打撃', title: '同時打撃（円く並べた全台）', use: 'データセットの論文の技術的な確認（時刻の確認）、計測装置の論文（時刻の確認）',
+    what: '円く並べた全台と、中心の印とハンマー', where: '円の外の、高い所から', dir: '横長', must: ['全台が円く並んだ様子', 'ハンマー', '人の顔が写っていない'], note: '1日目の取り付けの前（撤去の後の同時打撃はしない）。',
+    view: { svg: 'ring', svgText: ['all'] } }),
   // 試験車
   P_({ id: 'car-left', order: 60, days: [1, 3, 4, 5, 6], last: 6, group: '試験車', title: '試験車の真横（左）', use: 'データセットの論文の方法（図2：試験車とセンサ）',
     what: 'センサを付けた試験車の全体', where: '車の左の、真横から離れて', dir: '車の全体が入るように。横長', must: ['車の全体', 'ナンバープレートが写っていない（真横から）', '人が乗っていない・周りにいない'],
@@ -1025,15 +990,9 @@ export const PAPER = [
     what: `VM1 のアンテナと本体（${unitOf('VM1')}）`, where: '車の斜め前の上から（脚立）', dir: '横長', must: ['アンテナと、付けた所', '本体とケーブル'], note: '置く所は未定。ナンバープレートを写さない。',
     view: pv({ scene: 'truck', target: 'VM1', labels: ['VM1'], cam: { dir: [0.4, 1, 0.7], dist: 1.3 } }) }),
   // 1日目だけの試験
-  P_({ id: 'test-wheel', order: 70, days: [1], last: 1, group: '1日目の試験', title: '輪重の測定（台はかり）', use: 'データセットの論文の方法（車両のパラメータ）',
-    what: '台はかりに載った車輪', where: '車の横から', dir: '横長', must: ['車輪と台はかり', 'ナンバープレートが写っていない'],
-    view: pv({ scene: 'truck', target: [0, 0.645, 0.05], ring: 0.2, targetLabel: '前左', cam: { dir: [0.3, 1, 0.45], dist: 1.5 } }) }),
   P_({ id: 'test-step', order: 71, days: [1], last: 1, group: '1日目の試験', title: '段差を落ちる試験', use: 'データセットの論文の方法（車両単独の試験）',
     what: '段差の板の上に止めた前輪（落ちる前）', where: '車の左の横から', dir: '横長', must: ['段差の板と前輪', 'ナンバープレートが写っていない'], note: '車を止めた状態で撮る（落ちている所は撮らない）。',
     view: pv({ scene: 'truck', target: [0, 0.645, 0.15], ring: 0.3, targetLabel: '前輪', cam: { dir: [0.15, 1, 0.3], dist: 2.2 } }) }),
-  P_({ id: 'test-board', order: 72, days: [1], last: 1, group: '1日目の試験', title: '板を越える試験', use: 'データセットの論文の方法（車両単独の試験）',
-    what: '板の手前に止めた前輪と、板', where: '車の左の横から', dir: '横長', must: ['板と前輪', 'ナンバープレートが写っていない'], note: '車を止めた状態で撮る。',
-    view: pv({ scene: 'truck', target: [0.6, 0.645, 0.02], ring: 0.25, targetLabel: '板', cam: { dir: [0.3, 1, 0.35], dist: 2.2 } }) }),
   P_({ id: 'test-push', order: 73, days: [1], last: 1, group: '1日目の試験', title: '押して離す試験', use: 'データセットの論文の方法（車両単独の試験）',
     what: '車の後ろを押す手と、車', where: '押す人の横から', dir: '横長', must: ['押す所と手', '押す人の顔が写っていない', 'ナンバープレートが写っていない'],
     view: pv({ scene: 'truck', target: [-2.9, 0, 0.9], ring: 0.15, targetLabel: '押す所', cam: { dir: [-0.6, 1, 0.4], dist: 2.4 } }) }),
@@ -1069,15 +1028,15 @@ PAPER.forEach((p) => { p.due = DUE[p.id] ?? (p.days[0] === 1 && p.last === 1 ? 1
 // 記録の写真を撮るその場で、論文用の写真も撮るように案内する（作業の id/写真の id → 論文用の id）
 export const PAPER_HINTS = {
   'clean-after/clean-after-g1': ['bare-g1'], 'clean-after/clean-after-g4': ['bare-out'], 'clean-after/clean-after-in': ['bare-deck', 'bare-side'],
-  'dims/bearing-0-G1': ['bearing-in'], 'dims/bearing-1-G1': ['bearing-out'], 'joints/j1L-step': ['joint'],
+  'dims/bearing-0-G1': ['bearing-in'], 'dims/bearing-1-G1': ['bearing-out'], 'dims/joint-x-1': ['joint'],
   'install/U12-a': ['rep-imu-g1'], 'install/U23-a': ['rep-imu-deck'], 'install/U13-a': ['rep-ono'], 'install/E1-a': ['rep-bearing-pt'],
   'install/route-G4': ['inst-g1', 'inst-side', 'inst-out', 'inst-deck'],
-  'ice/U13-ice': ['rep-cover'], 'press/PRESS_P001-a': ['rep-press'], 'temp/T1-b': ['rep-temp'], 'mosaic/C1-a': ['rep-mosaic'], 'mosaic/BM1-a': ['rep-bm1'],
-  'shaker-am/mass-on': ['rep-shaker', 'rep-shaker-wide'], 'shaker-am/tarp-gear': ['rep-daq'], 'sync/sync-row': ['rep-sync'], 'sync-after/sync-row': ['rep-sync'],
+  'ice/U13-ice': ['rep-cover', 'rep-cover-in'], 'press/PRESS_P001-a': ['rep-press'], 'temp/T1-b': ['rep-temp'], 'mosaic/C1-a': ['rep-mosaic'], 'mosaic/BM1-a': ['rep-bm1'],
+  'shaker-am/mass-on': ['rep-shaker', 'rep-shaker-wide'], 'shaker-am/tarp-gear': ['rep-daq'], 'sync/sync-all': ['rep-sync'],
   'bolts-intact/bolts-all': ['cg-intact', 'cg-intact-bolts'], 'state/state-all': ['cg-intact', 'cg-intact-bolts', 'cg-light-bolts', 'cg-heavy', 'cg-restored'],
   'to-light/light-all': ['cg-light-bolts'], 'to-heavy/heavy-empty': ['cg-heavy'], 'to-heavy/heavy-mass': ['cg-removed'], 'to-intact/back-all': ['cg-restored'],
   'vehicle/FSL-a': ['car-sprung'], 'vehicle/FZL-a': ['car-unspr-f'], 'vehicle/RZL-a': ['car-unspr-r'], 'vehicle/VM1-a': ['car-vm1'], 'vehicle/mass-load': ['car-left', 'car-right'],
-  'vehicle-alone/wheel-FL': ['test-wheel'], 'vehicle-alone/step-f': ['test-step'], 'vehicle-alone/board': ['test-board'], 'vehicle-alone/push-r': ['test-push'],
+  'vehicle-alone/step-f': ['test-step'], 'vehicle-alone/push-r': ['test-push'],
   'static/q2-on': ['test-static'], 'passage/gopro': ['run-g1', 'run-press'], 'ambient/ambient-start': ['run-shake', 'site', 'rep-hammer'],
   'prep-mass/mass-weigh': ['rep-mass-parts'], 'shaker-am/S1-clamps': ['rep-clamp'], 'dims/cross-4': ['bare-under'], 'collect/collect-spr': ['rep-collect'],
 };
@@ -1127,28 +1086,39 @@ function withSteps(T, day) {
   return T;
 }
 
+// 作業A・作業C が来ない時間（手順書 §1.2：10/30 の午後と 10/31）は、その分を作業D と責任者が行う。走行の見張りも作業D と責任者
+const AWAY = { 3: (t) => t.part === '夕方' || t.id === 'passage', 4: () => true };
+function withAbsence(T, day) {
+  const away = AWAY[day];
+  for (const t of away ? T : []) {
+    if (!away(t) || !/作業[AC]/.test(t.role)) continue;
+    t.role = t.id === 'passage' ? '運転：作業B、見張り：作業D・責任者、データ：責任者' : `${t.role}（この日、作業A・作業C の分は作業D と責任者）`;
+  }
+  return T;
+}
+
 export function tasksFor(day) {
-  return withSteps(tasksForDay(day), day);
+  return withSteps(withAbsence(tasksForDay(day), day), day);
 }
 
 function tasksForDay(day) {
   const T = [];
   if (day === 0) {
-    T.push(noPhoto('prep', '準備', '前日までの準備', '全台の動作・SD・充電、試験A・B の準備、割り当て表、名札、アプリの確認など。', '手順書 §0', '全員'));
+    T.push(noPhoto('prep', '準備', '前日までの準備', '全台の動作・SD・充電、試験B の準備、割り当て表、名札、アプリの確認など。', '手順書 §0', '全員'));
     T.push(prepMassTask());
-    T.push(noPhoto('testA', '準備', '試験A を始める（10/27 の夕方）', '40台を剛体ブロックに並べて、18:00 に試験A を始め、22:00 に小野橋梁センサのモバイルバッテリーを替える（時刻は案）。手順の正本はセンサの性能評価の手順書（このアプリには写さない）。', '手順書 §1.1', '責任者・作業A・作業B'));
+    T.push(noPhoto('testA', '準備', '10/27：加振器の試しと備品の確かめ', 'この日は、加振器（レックスの機材）の受け取りと試しの運転、備品の確かめだけを行う。保冷剤 56個を 16:30 までに凍らせ、1日目に使うモバイルバッテリーを充電する。', '手順書 §1.1', '責任者（保冷剤と充電は作業B）'));
     T.push(paperTask(0));
     return T;
   }
   if (day === 1) {
-    T.push(noPhoto('testAB', '朝', '試験A の終了・試験B', 'センサの試験A（前の晩から）を終え、試験B を行う。手順はセンサの性能評価の手順書（このアプリには写さない）。', '手順書 §1.1', '責任者・作業A・作業B'));
     T.push(cleaningTask(false), shakerMorningTask(true), cleaningTask(true));
-    T.push(dimensionsTask(), jointStepTask(), hammerMarkTask());
-    T.push(noPhoto('guide-line', '日中', '走行の案内線と床版の目盛り', '走行の案内線を引き、床版の目盛りを入口と出口に貼る。', '手順書 §1.1・§10 の2・5', '作業A'));
+    T.push(dimensionsTask(), hammerMarkTask());
+    T.push(noPhoto('guide-line', '日中', '走行の案内線と床版の目盛り', '走行の案内線を引き、床版の目盛り（マスキングテープに油性ペンで書いた物）を入口と出口に貼る。', '手順書 §1.1・§10 の2・5', '作業A'));
     T.push(deckBoltTask());
+    T.push(noPhoto('testAB', '日中', '試験B', '重力の6姿勢（11:00〜12:00 の案）。記録は屋外で始め、始まったら室内に移す。手順はセンサの性能評価の手順書（このアプリには写さない）。', '手順書 §1.1', '責任者'));
     T.push(noPhoto('shake-trial', '日中', '加振器の試運転', '加振器の試運転（約15分）と確かめの運転（約10分）。アプリが振動数ごとの強さを決める。その間は橋の上と下に人を入れない。', '手順書 §1.1・§9 の2、加振器とハンマーの使い方 §6', '責任者'));
-    T.push(syncTask(day, false), vehicleInstallTask(1), installTask(), iceTask(true), vehicleAloneTask(), staticLoadTask());
-    T.push(noPhoto('rehearsal', '日中', '全機器の通し確認と予行の走行', '全機器を現地で動かし、予行の走行を3回する。1回の走行にかかる時間を測る。前処理を最後まで通す。モバイルバッテリーの持ちと GNSS の受信も確かめる。', '手順書 §14', '全員（運転は作業A）'));
+    T.push(syncTask(), vehicleInstallTask(1), installTask(), iceTask(true), vehicleAloneTask(), staticLoadTask());
+    T.push(noPhoto('rehearsal', '日中', '全機器の通し確認と予行の走行', '全機器を現地で動かし、予行の走行を3回する。1回の走行にかかる時間を測る。前処理を最後まで通す。モバイルバッテリーの持ちと GNSS の受信も確かめる。', '手順書 §14', '全員（運転は作業B）'));
     T.push(paperTask(1), swapTask());
     T.push(...eveningTasks(1));
     T.push(noPhoto('charge', '夕方', 'モバイルバッテリーの充電と保冷剤', '使ったモバイルバッテリーを充電する（2日目の朝に、橋の28台と MOSAIC 5台の分）。使った保冷剤を冷凍庫に入れる。', '手順書 §1.1', '作業B'));
@@ -1165,11 +1135,13 @@ function tasksForDay(day) {
   if (first) {
     T.push({
       id: 'bolts-intact', part: '朝', title: '横桁のボルトの合いマーク（健全）', role: '責任者',
-      desc: `損傷させる横桁（G3–G4 の間、支間中央）の8本を、規定のトルクで締めて確かめ（値は書かない）、ボルト・ナット・板にまたがる合いマークをペイントマーカーで引く。${NUMBERING}`,
+      desc: `損傷させる横桁（G3–G4 の間、支間中央）の8本を、規定のトルクで締めて確かめ（値は書かない）、ボルト・ナット・板にまたがる合いマークを油性ペンで引く。${NUMBERING}`,
       ref: '手順書 §11', shots: [damageOverall('bolts-all', 'intact', '横桁の全体（健全）', ['横桁の全体', '両端のボルト']), ...damageShots('intact', 'intact', '健全', ['合いマークの線が、ボルト・ナット・板にまたがっている'])],
     });
   }
-  if (day >= 3) T.push(stateMorningTask(day), vehicleInstallTask(day));
+  if (day >= 3) T.push(stateMorningTask(day));
+  if (day === 3) T.push(vehicleInstallTask(day));
+  if (day >= 4) T.push(noPhoto('vehicle-on', '朝', '車両のセンサの記録を始める', '車両のセンサは、3日目から付けたまま。SD カードを戻してモバイルバッテリーをつなぎ（ばね下は PC をつなぎ）、記録中を確かめる。', '手順書 §1.2・§5 の3', day === 6 ? '作業A' : '作業A・作業C'), vehicleInstallTask(day));
   T.push(noPhoto('shake', '日中', day === 2 ? '加振の試験（1日中）' : '加振の試験（午前）', `Mac のアプリで、3〜70 Hz の掃引を決めた間隔（例：30分ごと）で自動でくり返す。加振の間は橋の上と下に人を入れない。決めた時刻ごとに、全台が記録中か（小野橋梁センサのランプ、熱で止まっていないか）を見る。開始と終了の時刻・強さ・ファイル名はアプリが記録する。`, '手順書 §9', '責任者'));
   T.push(ambientTask(day));
   if (day >= 3) {
@@ -1179,17 +1151,17 @@ function tasksForDay(day) {
   if (day === 3) T.push(changeTask('light'));
   if (day === 4) T.push(changeTask('heavy'));
   if (day === 5) T.push(changeTask('intact'));
-  if (day === 6) T.push(removalTask(), syncTask(day, true));
   T.push(paperTask(day));
   T.push(...eveningTasks(day));
   return T;
 }
 
+const MOVE_NOTE = 'センサは外さない（作業の邪魔になる台だけ外し、終わったら印の位置に同じ向きで戻して「台を替えた・異常があったとき」で撮る。夕方に設置の記録の CSV を直す）。';
 function changeTask(to) {
   if (to === 'light') {
     return {
       id: 'to-light', part: '夕方', title: '状態の変更：健全 → 軽度', role: '作業B・作業C（手が空いたら作業A・責任者も）',
-      desc: `損傷させる横桁の両端の8本を、ナットが手で回る程度まで緩める。センサは外さない。下に人を入れない。${NUMBERING}`,
+      desc: `損傷させる横桁の両端の8本を、ナットが手で回る程度まで緩める。下に人を入れない。${MOVE_NOTE}${NUMBERING}`,
       ref: '手順書 §11', shots: [...damageShots('light', 'light', '軽度（緩めた後）', ['合いマークのずれ（緩めて回った量）が分かる']), damageOverall('light-all', 'light', '横桁の全体（軽度）', ['横桁の全体', '両端のボルト'])],
     };
   }
@@ -1197,7 +1169,7 @@ function changeTask(to) {
     const v = (extra) => ({ target: 'node:CG_x4.550_G3G4', state: 'heavy', deck: 0.25, cam: DAMAGE_CAM, floor: BR.groundZ, orient: 'yoko', ring: 0.3, over: { dist: 3.4, elev: 45, turn: 20 }, ...extra });
     return {
       id: 'to-heavy', part: '夕方', title: '状態の変更：軽度 → 重度', role: '作業B・作業C（手が空いたら作業A・責任者も）',
-      desc: '同じ横桁（約 36.8 kg）を、複数人で支えてからボルトを抜いて外す。下に人を入れない。床版を動かすときは、バール（長さ 60 cm 前後、2本）で、てこの原理で動かす。外したボルトは袋に分け、番号を付ける。ほかの物（加振器、センサ、ケーブル、覆い）は動かさない。',
+      desc: '同じ横桁（約 36.8 kg）を、複数人で支えてからボルトを抜いて外す。下に人を入れない。床版を動かすときは、バール（長さ 60 cm 前後、2本）で、てこの原理で動かす。外したボルトは袋に分け、番号を付ける。加振器・ケーブル・覆いは動かさない。' + MOVE_NOTE,
       ref: '手順書 §11、計画書 §10.2 の5', shots: [
         { id: 'heavy-empty', title: '外した後の空いた所', what: '横桁を外した後の G3–G4 の間（支間中央）', where: 'G3 と G4 の間の、橋の下から（入口の側から支間中央に向けて）', dir: '空いた所の全体。横長', must: ['横桁がない', 'まわりの部材とセンサがそのまま'], view: v({ targetLabel: '外した横桁のあった所' }) },
         { id: 'heavy-mass', title: '外した横桁の質量', what: 'はかりに載せた横桁', where: 'はかりの正面から', dir: '表示が読めるように', must: ['はかりの表示', '横桁の全体'], view: { svg: 'scale', svgText: ['外した横桁（約 36.8 kg）'] } },
@@ -1208,7 +1180,7 @@ function changeTask(to) {
   }
   return {
     id: 'to-intact', part: '夕方', title: '状態の変更：重度 → 健全', role: '作業B・作業C（手が空いたら作業A・責任者も）',
-    desc: `横桁を取り付け直し、8本を規定のトルクで、トルクレンチで締める（値は書かない）。締めたら、新しい合いマークを引く。${NUMBERING}`,
+    desc: `横桁を取り付け直し、8本を規定のトルクで、トルクレンチで締める（値は書かない）。締めたら、新しい合いマークを引く。${MOVE_NOTE}${NUMBERING}`,
     ref: '手順書 §11', shots: [damageOverall('back-all', 'intact', '取り付け直した横桁', ['横桁の全体', '両端のボルト']), ...damageShots('back', 'intact', '健全（締め直した後）', ['締めた後に引いた新しい合いマーク'])],
   };
 }
@@ -1219,14 +1191,44 @@ function removalTask() {
     const outside = g === 'G1' ? -1 : g === 'G4' ? 1 : 0;
     return {
       id: `removed-${g}`, title: `外した後（${g} の線）`, what: `${g} の線の、センサとアンテナを外した後`, where: outside ? `橋の外（${g} の側）の入口の近くから` : '床版の上の、入口の端から', dir: '出口へ向けて。横長',
-      must: ['センサ・アンテナ・ケーブル・磁石の台が残っていない'],
+      must: ['センサ・アンテナ・ケーブル・両面テープが残っていない'],
       view: { target: [3.5, y, 0.05], ring: 0.01, cam: outside ? { dir: [-1.2, outside * 0.7, 0.55], dist: 4.6 } : { dir: [-1, 0, 0.35], dist: 4.4 }, orient: 'yoko' },
     };
   });
   return {
-    id: 'removal', part: '夕方', title: '撤去', role: '全員',
-    desc: '走行の後、加振器と、橋のセンサ・四隅の MOSAIC（C1〜C4）・感圧・温度を外す。四隅の MOSAIC は記録を止めてデータを USB メモリに写してから外す。橋のセンサ・感圧・温度は、同時打撃まで記録を止めない（外した台は同時打撃に使う）。固定点 BM1 は、記録を止めてデータを USB メモリに写し、本体は隣の建物の屋上に残す（11/4 の別の橋の計測で PPK の基準局に使い、その後に回収する）。取り忘れがないかを主桁の線ごとに撮る。',
-    ref: '手順書 §12', shots,
+    id: 'removal', part: '夕方', title: '撤去', role: '作業B・作業D（BM1 は作業D、最後の確かめは全員）',
+    desc: '時刻差の試験で使わない物（小野橋梁センサ 12台・四隅の MOSAIC・感圧センサ・温度センサと、そのアンテナ・日よけ・ケーブル）を外す。四隅の MOSAIC は、記録を止めてデータを USB メモリに写してから外す。固定点 BM1 は、記録を止めてデータを回収し、本体は隣の建物の屋上に残す（11/4 の別の橋の計測で PPK の基準局に使い、その後に回収する）。橋の SPRESENSE 12台は、時刻差の試験が終わるまで記録を止めない。最後に、取り忘れがないかを主桁の線ごとに撮る。',
+    ref: '手順書 §1.2・§12', shots,
+  };
+}
+
+// 時刻差の試験（手順書 §12）：支間中央の G4 の真上の床版に、叩く所 × と、基準の位置 R・R2、測る位置 S（入口の支承からの x、m）
+const TS = { hit: 4.55, R: 4.40, S: 4.70, R2: 4.10 };
+function tsyncTask() {
+  const y = BR.girderY[3];
+  const at = (x) => [x, y, DECK];
+  const marks = Object.entries({ '×': TS.hit, R: TS.R, S: TS.S, R2: TS.R2 }).map(([text, x]) => ({ text, at: [x, y - 0.14, DECK + 0.02], cls: text === '×' ? 'hi' : 'dim' }));
+  const view = (target, cam) => ({ target, ring: 0.07, cam, orient: 'yoko', floor: DECK, notes3d: marks, over: { dist: 2.2, elev: 62, turn: -35 }, legend: '印は G4 の真上の床版（R2 4.10・R 4.40・× 4.55・S 4.70 m。入口の支承から）' });
+  return {
+    id: 'tsync', part: '夕方', title: '時刻差の試験（SPRESENSE 20台）', role: '責任者・作業A',
+    desc: '最後の計測の後に行う（約45分）。SPRESENSE 20台（橋の12台・車両の8台）を、記録を止めずに、支間中央の G4 の真上へ1台ずつ置いて叩く。叩いている間は、橋に乗らない・触らない。雨の日は行わない。手順の正本はセンサの性能評価の手順書（このアプリには写さない）。',
+    ref: '手順書 §1.2・§12', shots: [
+      {
+        id: 'tsync-ref', title: '基準機（R）と2台目の基準機（R2）', what: 'R と R2 に置いた2台と、その名札', where: '橋の外（G4 の側）から、2台の近くで', dir: '斜め上から。横長',
+        must: ['2台の名札が読める', '床版の印（R・R2）が見える', '2台とも容器の同じ面を、橋の同じ向きに向けている'], note: `この2台は、終わるまで動かさない。R2 のすぐ横（x = ${m3(P.U43.x)}）には U43 の台（${unitOf('U43')}）が貼ってあるので、先にはがす（その台も、1台ずつ測る台の1つ）。`,
+        view: view([at(TS.R2), at(TS.R)], { dir: [0, 1, 0.9], dist: 0.9 }),
+      },
+      {
+        id: 'tsync-unit', title: 'S に置いた台（1台ごと）', what: 'S に置いた台の名札', where: '橋の外（G4 の側）から、S の近くで', dir: '斜め上から。横長',
+        must: ['S に置いた台の名札が読める', '床版の印（S）が見える'], note: '台を置くたびに、叩く前に1枚撮る（写真の時刻で、どの台をいつ測ったかが分かる）。橋に貼ってある台は、はがしてから置く。',
+        view: view([at(TS.S)], { dir: [0.2, 1, 0.9], dist: 0.65 }),
+      },
+      {
+        id: 'tsync-swap', title: '入れ替えの確かめ（基準機を S に）', what: '基準機を S に、最後に測った台を R に置いた所', where: '橋の外（G4 の側）から', dir: '斜め上から。横長',
+        must: ['S と R の2台の名札が読める'], note: '最後の台を測り終えたら、基準機とその台の場所を入れ替えて、もう一度測る。',
+        view: view([at(TS.R), at(TS.S)], { dir: [0, 1, 0.9], dist: 0.8 }),
+      },
+    ],
   };
 }
 
@@ -1250,8 +1252,21 @@ export function svgFigure(kind, text = []) {
   if (kind === 'mosaic') {
     return wrap(`<rect x="110" y="40" width="140" height="100" rx="10" fill="#e9edf1" stroke="#5a6b7b" stroke-width="2"/><rect x="125" y="55" width="80" height="50" fill="#1d2b36"/>${t('画面', 165, 85, 12).replace('currentColor', '#fff')}<rect x="150" y="115" width="90" height="20" rx="4" fill="#fffbe6" stroke="#c79a00"/>${t(`${text[0] || ''} ${text[1] || ''}`, 195, 130, 11, 700)}`, '名札と画面が入るように撮る');
   }
-  if (kind === 'caliper') {
-    return wrap(`<rect x="60" y="80" width="240" height="18" fill="#c9d3dd" stroke="#5a6b7b"/><rect x="60" y="60" width="16" height="60" fill="#9aa8b6"/><rect x="170" y="60" width="16" height="60" fill="#9aa8b6"/><rect x="120" y="96" width="60" height="44" fill="#d9a066"/>${t(text[0] || '', 150, 160, 13, 700)}`, 'ノギスの目盛りが読めるように撮る');
+  if (kind === 'ring') {
+    // 同時打撃の円（手順書 §3）。SYNC_GROUPS の順に、上から時計回りに 28 台。text[0] の区切りを色で示す（'all' は全部）
+    const on = text[0] || 'all';
+    const all = Object.entries(SYNC_GROUPS).flatMap(([g, [, ids]]) => ids.map(() => g));
+    const cx = 180, cy = 112, r = 62;
+    const boxes = all.map((g, k) => {
+      const a = -Math.PI / 2 + (2 * Math.PI * k) / all.length;
+      const x = (cx + r * Math.cos(a)).toFixed(1), y = (cy + r * Math.sin(a)).toFixed(1);
+      const hit = on === 'all' || on === g;
+      return `<rect x="${(x - 6).toFixed(1)}" y="${(y - 6).toFixed(1)}" width="12" height="12" rx="2" fill="${hit ? '#f6aa00' : '#d9e2ec'}" stroke="${hit ? '#16202a' : '#9aa8b6'}" transform="rotate(${((a * 180) / Math.PI + 90).toFixed(1)} ${x} ${y})"/>`;
+    }).join('');
+    const name = on === 'all' ? '橋に付ける 28 台' : SYNC_GROUPS[on][0];
+    const arc = `<path d="M ${cx + 84 * Math.cos(-1.25)} ${cy + 84 * Math.sin(-1.25)} A 84 84 0 0 1 ${cx + 84 * Math.cos(-0.45)} ${cy + 84 * Math.sin(-0.45)}" fill="none" stroke="#5a6b7b" stroke-width="1.5" marker-end="url(#ring-arrow)"/>`;
+    const defs = '<defs><marker id="ring-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#5a6b7b"/></marker></defs>';
+    return wrap(`${defs}${t(name, cx, 20, 13, 700)}${t('始め', cx, cy - r - 12, 10)}<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#9aa8b6" stroke-dasharray="4 4"/>${boxes}${arc}${t('時計回り', cx + 98, cy - 52, 11)}<line x1="${cx}" y1="${cy}" x2="${cx + r * 0.62}" y2="${cy - r * 0.62}" stroke="#1c7ed6" stroke-width="2"/>${t('半径 70 cm〜1 m', cx + 4, cy + 36, 10, 700).replace('currentColor', '#1c7ed6')}${t('×', cx, cy + 7, 22, 700).replace('currentColor', '#cc1a4d')}${t('叩く所', cx, cy + 22, 10)}`, on === 'all' ? '円の全体と中心の印が入るように、高い所から撮る' : `${name}の名札が読めるように撮る`);
   }
   if (kind === 'step') {
     return wrap(`<rect x="40" y="130" width="280" height="20" fill="#9aa8b6"/><rect x="180" y="104" width="140" height="26" fill="#d9a066"/><rect x="170" y="70" width="6" height="80" fill="#fff" stroke="#5a6b7b"/>${t(text[0] || '', 250, 96, 13)}${t(text[1] || '', 120, 120, 13)}`, '物差しを段差の横に立て、高さが読めるように撮る');

@@ -387,48 +387,6 @@ export class Viewer {
     return s;
   }
 
-  // ---------- 同時打撃の板（模式） ----------
-  // 3段：1段目 橋の SPRESENSE 12台、2段目 小野橋梁センサ 12台、3段目 感圧と温度のロガー 4台（content.js の SYNC_ROWS と同じ並び）
-  syncScene() {
-    if (this.scenes.sync) return this.scenes.sync;
-    const s = this._baseScene();
-    const plank = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.03, 0.75), mat(0xb08d5b));
-    plank.position.set(0, 0.015, 0.02);
-    s.scene.add(plank);
-    const rows = [[-0.22, 12, COLORS.imu], [0.0, 12, COLORS.ono], [0.24, 4, COLORS.temp]];
-    s.markers = {};
-    const group = (id, text, center) => {
-      const g = new THREE.Group();
-      g.userData.anchor = center;
-      const l = label(text, 'dim');
-      l.position.copy(center).add(new THREE.Vector3(0, 0.06, 0));
-      l.visible = false;
-      g.add(l);
-      g.userData.label = l;
-      s.scene.add(g);
-      s.markers[id] = g;
-    };
-    rows.forEach(([z, n, c], r) => {
-      for (let i = 0; i < n; i++) {
-        const x = n === 12 ? -1.1 + i * 0.2 : -0.3 + i * 0.2;
-        const b = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.09), mat(c));
-        b.position.set(x, 0.06, z);
-        s.scene.add(b);
-        s.scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), b.position.clone().add(new THREE.Vector3(-0.04, 0.035, 0)), 0.08, 0xffffff, 0.03, 0.02));
-      }
-    });
-    group('row1L', '1段目 左（BRI_P001〜P006）', new THREE.Vector3(-0.6, 0.06, -0.22));
-    group('row1R', '1段目 右（BRI_P007〜P012）', new THREE.Vector3(0.6, 0.06, -0.22));
-    group('row2L', '2段目 左（小野 6台）', new THREE.Vector3(-0.6, 0.06, 0.0));
-    group('row2R', '2段目 右（小野 6台）', new THREE.Vector3(0.6, 0.06, 0.0));
-    group('row3', '3段目（感圧2・温度2）', new THREE.Vector3(0, 0.06, 0.24));
-    group('all', '全 28 台', new THREE.Vector3(0, 0.06, 0.0));
-    const l3 = label('並べ方の模式（実物の形ではない）', 'dim'); l3.position.set(0.7, 0.3, -0.45); s.scene.add(l3);
-    s.anchor = new THREE.Vector3(0, 0.06, 0);
-    this.scenes.sync = s;
-    return s;
-  }
-
   // ---------- 機器 ----------
   async deviceScene(url) {
     const key = 'dev:' + url;
@@ -487,7 +445,7 @@ export class Viewer {
   }
 
   _point(s, ref) {
-    if (Array.isArray(ref)) return s === this.scenes.truck ? V(...ref) : s === this.scenes.sync ? new THREE.Vector3(...ref) : B(...ref);
+    if (Array.isArray(ref)) return s === this.scenes.truck ? V(...ref) : B(...ref);
     if (typeof ref === 'string') {
       if (ref.startsWith('node:')) {
         const n = s.node && s.node(ref.slice(5));
@@ -516,7 +474,6 @@ export class Viewer {
     let s;
     try {
       if (view.scene === 'truck') s = await this.truckScene();
-      else if (view.scene === 'sync') s = this.syncScene();
       else s = await this.bridgeScene();
     } catch (e) { this._fail(e); return; }
     this._useScene(s);
@@ -692,7 +649,7 @@ export class Viewer {
       if (xb > BR.deckX[0] && xb < BR.deckX[1] && yb > BR.deckY[0] && yb < BR.deckY[1] && C.y > DECK_TOP) floor = DECK_TOP;
     }
     if (view.floor != null) floor = view.floor;
-    if (C.y - floor > 0.15 && s !== this.scenes.sync) {
+    if (C.y - floor > 0.15) {
       const foot = new THREE.Vector3(C.x, floor + 0.003, C.z);
       g.add(dashed(C, foot, COLORS.cam, 0.04));
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.11, 0.16, 32), new THREE.MeshBasicMaterial({ color: COLORS.cam, side: THREE.DoubleSide }));

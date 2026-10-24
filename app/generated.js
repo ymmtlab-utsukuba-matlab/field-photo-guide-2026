@@ -1051,7 +1051,7 @@ export const GEN = {
     5,
     6
    ],
-   "reason": "小野橋梁センサ：位置の番号（BRIDGE_ONO の P01〜P12）の順に、予備の P009・P014 を除いた台を番号の順に当てる"
+   "reason": "小野橋梁センサ：位置の番号（BRIDGE_ONO の P01〜P12）と台の番号をそろえる（予備は P013・P014。2026-10-24 にユーザーが P009 と P013 の番号を入れ替えた）"
   },
   {
    "point": "U11",
@@ -1146,7 +1146,7 @@ export const GEN = {
   },
   {
    "point": "U34",
-   "device": "ONO_P010",
+   "device": "ONO_P009",
    "days": [
     1,
     2,
@@ -1155,11 +1155,11 @@ export const GEN = {
     5,
     6
    ],
-   "reason": "同上（P009 は予備）"
+   "reason": "同上（10-24 までの P013 の台）"
   },
   {
    "point": "E7",
-   "device": "ONO_P011",
+   "device": "ONO_P010",
    "days": [
     1,
     2,
@@ -1172,7 +1172,7 @@ export const GEN = {
   },
   {
    "point": "U41",
-   "device": "ONO_P012",
+   "device": "ONO_P011",
    "days": [
     1,
     2,
@@ -1185,7 +1185,7 @@ export const GEN = {
   },
   {
    "point": "E8",
-   "device": "ONO_P013",
+   "device": "ONO_P012",
    "days": [
     1,
     2,
@@ -1194,7 +1194,7 @@ export const GEN = {
     5,
     6
    ],
-   "reason": "同上（P014 は予備）"
+   "reason": "同上（P013・P014 は予備）"
   },
   {
    "point": "PRESS_P001",
@@ -1418,7 +1418,7 @@ export const GEN = {
   }
  ],
  "spares": [
-  "ONO_P009",
+  "ONO_P013",
   "ONO_P014"
  ],
  "bridge": {

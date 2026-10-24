@@ -279,7 +279,7 @@ function renderAssign() {
   const head = '<tr><th>位置</th><th>台（SD 名）</th><th>主桁</th><th>x（m）</th><th>前処理のフォルダ</th></tr>';
   const dates = Object.entries(GEN.built.dates);
   let html = '<h1>割り当て表</h1>';
-  html += '<p>どの台をどの位置に付けるか（2026-10-19 にユーザーが確定）。規則：設置表の位置の番号（position_code）と台の番号をそろえる。小野橋梁センサは予備の P009・P014 を除いて番号の順。</p>';
+  html += '<p>どの台をどの位置に付けるか（2026-10-19 にユーザーが確定）。規則：設置表の位置の番号（position_code）と台の番号をそろえる。小野橋梁センサも位置の番号と台の番号をそろえる（予備は P013・P014。2026-10-24 に P009 と P013 の番号を入れ替えた）。</p>';
   html += `<h2>橋の24台（歩く順）</h2><div class="table-wrap"><table>${head}${BRIDGE_ORDER.map(row).join('')}</table></div>`;
   html += `<h2>感圧・温度・MOSAIC</h2><div class="table-wrap"><table>${head}${['PRESS_P001', 'PRESS_P002', 'T1', 'T2', 'C1', 'C2', 'C3', 'C4', 'BM1'].map(row).join('')}</table></div>`;
   html += `<h2>試験車（1日目と3〜6日目）</h2><div class="table-wrap"><table>${head}${['FSL', 'FSR', 'RSL', 'RSR', 'FZL', 'FZR', 'RZL', 'RZR', 'VM1'].map(row).join('')}</table></div>`;
